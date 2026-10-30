@@ -73,8 +73,17 @@ async function bootstrapAdmin() {
   }
 }
 
+/** ปรับข้อมูลเดิมให้ตรงรูปแบบปัจจุบัน — รันทุก deploy ได้ ไม่มีผลถ้าไม่มีอะไรต้องแก้ */
+async function normalizeData() {
+  const fixed = await prisma.$executeRaw`
+    UPDATE customers SET phone = NULLIF(regexp_replace(phone, '\\D', '', 'g'), '')
+    WHERE phone ~ '\\D'`;
+  if (fixed > 0) console.log(`seed: ปรับรูปแบบเบอร์โทร ${fixed} รายการ`);
+}
+
 async function main() {
   await bootstrapAdmin();
+  await normalizeData();
 
   if (process.env.SEED_DEMO !== "true") {
     console.log("seed: ข้าม (ตั้ง SEED_DEMO=true เพื่อใส่ข้อมูลตัวอย่าง)");

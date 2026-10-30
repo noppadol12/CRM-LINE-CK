@@ -9,7 +9,7 @@ Next.js (App Router) + Tailwind CSS + shadcn/ui + Prisma + Supabase Postgres, de
 | 0 | Setup โปรเจกต์ + GitHub + Vercel | ✅ |
 | 1 | Prisma schema + สร้างตารางอัตโนมัติ + seed | ✅ |
 | 2 | ระบบล็อกอิน + Layout sidebar + แดชบอร์ดเบื้องต้น | ✅ |
-| 3 | Customers CRUD + แท็ก | ⏳ |
+| 3 | จัดการลูกค้า (ตาราง ค้นหา เพิ่ม/แก้/ลบ) + แท็ก + โน้ต + เปลี่ยนรหัสผ่าน | ✅ |
 | 4 | LINE Webhook | ⏳ |
 | 5 | หน้าแชท + โน้ตภายใน + ตอบกลับ | ⏳ |
 | 6 | ระบบแต้ม (ledger) | ⏳ |

@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { formatDistanceToNowStrict } from "date-fns";
-import { th } from "date-fns/locale";
 import { ArrowRight, MessagesSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { TagChip } from "@/components/tag-chip";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
+import { displayName, timeAgo } from "@/lib/format";
 
 export async function RecentChats() {
   await getCurrentUser();
@@ -25,7 +24,7 @@ export async function RecentChats() {
       lastMessageAt: true,
       lastMessagePreview: true,
       unreadCount: true,
-      tags: { select: { tag: { select: { name: true } } }, take: 2 },
+      tags: { select: { tag: { select: { name: true, color: true } } }, take: 2 },
     },
   });
 
@@ -49,7 +48,7 @@ export async function RecentChats() {
         ) : (
           <ul className="divide-y">
             {rows.map((c) => {
-              const name = c.fullName || c.lineName || "ไม่ระบุชื่อ";
+              const name = displayName(c);
               return (
                 <li key={c.id}>
                   <Link href={`/chats?c=${c.id}`} className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-accent">
@@ -61,16 +60,14 @@ export async function RecentChats() {
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{name}</span>
                         {c.tags.map(({ tag }) => (
-                          <Badge key={tag.name} variant="secondary" className="hidden sm:inline-flex">
-                            {tag.name}
-                          </Badge>
+                          <TagChip key={tag.name} name={tag.name} color={tag.color} className="hidden sm:inline-flex" />
                         ))}
                       </div>
                       <p className="truncate text-sm text-muted-foreground">{c.lastMessagePreview}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       <span className="text-xs whitespace-nowrap text-muted-foreground">
-                        {c.lastMessageAt && formatDistanceToNowStrict(c.lastMessageAt, { addSuffix: true, locale: th })}
+                        {c.lastMessageAt && timeAgo(c.lastMessageAt)}
                       </span>
                       {c.unreadCount > 0 ? (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">

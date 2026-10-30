@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Form from "next/form";
 import { Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MobileNav } from "./mobile-nav";
@@ -16,16 +17,16 @@ export function Topbar() {
         }
       />
 
-      <label className="relative flex max-w-md flex-1 items-center">
+      <Form action="/customers" className="relative flex max-w-md flex-1 items-center" role="search">
         <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" />
         <input
           type="search"
+          name="q"
           placeholder="ค้นหาลูกค้า ชื่อ เบอร์โทร…"
-          disabled
-          title="เปิดใช้งานใน Phase 3"
-          className="h-9 w-full rounded-lg border border-transparent bg-muted pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:bg-card disabled:cursor-not-allowed"
+          aria-label="ค้นหาลูกค้า"
+          className="h-9 w-full rounded-lg border border-transparent bg-muted pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:bg-card"
         />
-      </label>
+      </Form>
 
       <div className="ml-auto lg:hidden">
         <Suspense fallback={<Skeleton className="size-9 rounded-full" />}>

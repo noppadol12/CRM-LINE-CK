@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Thai } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const plexThai = IBM_Plex_Sans_Thai({
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="th" className={`${plexThai.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-[family-name:var(--font-sans-thai)]">
         {children}
+        <Toaster />
       </body>
     </html>
   );
