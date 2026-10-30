@@ -1,9 +1,10 @@
-import { Gift, MessageCircleMore, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { Handshake, MessageCircleMore, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { thNumber } from "@/lib/utils";
+import { bahtCompact, CLOSED_STAGES } from "@/lib/deal-stages";
 
 /** วันที่ 1 ของเดือนนี้ ตามเวลาไทย */
 function startOfMonthBangkok(): Date {
@@ -14,29 +15,41 @@ function startOfMonthBangkok(): Date {
   return new Date(Date.UTC(y, m - 1, 1, -7)); // 00:00 น. เวลาไทย = 17:00 UTC ของวันก่อน
 }
 
-type Kpi = { label: string; value: number; hint: string; icon: LucideIcon; tone: string };
+type Kpi = { label: string; value: number; display?: string; hint: string; icon: LucideIcon; tone: string };
 
 export async function KpiCards() {
   await getCurrentUser();
 
   const active = { deletedAt: null };
-  const [customers, newThisMonth, awaiting, points] = await Promise.all([
+  const [customers, newThisMonth, awaiting, openDeals] = await Promise.all([
     prisma.customer.count({ where: active }),
     prisma.customer.count({ where: { ...active, createdAt: { gte: startOfMonthBangkok() } } }),
     prisma.customer.count({ where: { ...active, unreadCount: { gt: 0 } } }),
-    prisma.customer.aggregate({ where: active, _sum: { pointBalance: true } }),
+    prisma.deal.aggregate({
+      where: { stage: { notIn: CLOSED_STAGES }, customer: { deletedAt: null } },
+      _sum: { amount: true },
+      _count: true,
+    }),
   ]);
+  const openValue = Number(openDeals._sum.amount ?? 0);
 
   const kpis: Kpi[] = [
     { label: "ลูกค้าทั้งหมด", value: customers, hint: "ราย", icon: Users, tone: "bg-sky-50 text-sky-600" },
     { label: "ลูกค้าใหม่เดือนนี้", value: newThisMonth, hint: "ราย", icon: UserPlus, tone: "bg-violet-50 text-violet-600" },
     { label: "แชทรอตอบ", value: awaiting, hint: "ห้อง", icon: MessageCircleMore, tone: "bg-amber-50 text-amber-600" },
-    { label: "แต้มคงเหลือรวม", value: points._sum.pointBalance ?? 0, hint: "แต้ม", icon: Gift, tone: "bg-primary-soft text-primary" },
+    {
+      label: "ดีลที่เปิดอยู่",
+      value: openValue,
+      display: `฿${bahtCompact.format(openValue)}`,
+      hint: `${thNumber.format(openDeals._count)} ดีล`,
+      icon: Handshake,
+      tone: "bg-primary-soft text-primary",
+    },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-      {kpis.map(({ label, value, hint, icon: Icon, tone }) => (
+      {kpis.map(({ label, value, display, hint, icon: Icon, tone }) => (
         <Card key={label} className="gap-3 px-4 py-4 sm:gap-4 sm:px-5 sm:py-5">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground sm:text-sm">{label}</span>
@@ -45,7 +58,7 @@ export async function KpiCards() {
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-semibold tracking-tight sm:text-3xl">{thNumber.format(value)}</span>
+            <span className="text-2xl font-semibold tracking-tight sm:text-3xl">{display ?? thNumber.format(value)}</span>
             <span className="text-sm text-muted-foreground">{hint}</span>
           </div>
         </Card>

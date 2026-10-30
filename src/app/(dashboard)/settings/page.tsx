@@ -8,6 +8,8 @@ import { listTags } from "@/lib/customers";
 import { canManage } from "@/lib/permissions";
 import { LineConnection } from "./line-connection";
 import { PasswordForm } from "./password-form";
+import { QuickRepliesManager } from "./quick-replies-manager";
+import { listQuickReplies } from "@/lib/quick-replies";
 import { TagsManager } from "./tags-manager";
 
 export const metadata: Metadata = { title: "ตั้งค่า · CK CRM" };
@@ -15,9 +17,12 @@ export const metadata: Metadata = { title: "ตั้งค่า · CK CRM" };
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="ตั้งค่า" description="แท็กลูกค้า การเชื่อมต่อ LINE OA และบัญชีของคุณ" />
+      <PageHeader title="ตั้งค่า" description="ข้อความสำเร็จรูป แท็กลูกค้า การเชื่อมต่อ LINE OA และบัญชีของคุณ" />
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+        <div className="space-y-6 lg:col-span-3">
+          <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
+            <QuickRepliesSection />
+          </Suspense>
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
             <TagsSection />
           </Suspense>
@@ -49,6 +54,22 @@ async function TagsSection() {
           tags={tags.map((t) => ({ id: t.id, name: t.name, color: t.color, count: t._count.customers }))}
           canEdit={canManage(user)}
         />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function QuickRepliesSection() {
+  const user = await getCurrentUser();
+  const replies = await listQuickReplies();
+  return (
+    <Card id="quick-replies" className="scroll-mt-24 gap-0 pb-0">
+      <CardHeader className="border-b pb-5">
+        <CardTitle>ข้อความสำเร็จรูป</CardTitle>
+        <CardDescription>กดปุ่ม ⚡ ในห้องแชทเพื่อแทรกข้อความที่ตอบบ่อย เช่น เลขบัญชี ค่าส่ง เวลาเปิดร้าน</CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        <QuickRepliesManager replies={replies} canEdit={canManage(user)} />
       </CardContent>
     </Card>
   );

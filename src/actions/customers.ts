@@ -115,7 +115,7 @@ export async function setCustomerTags(customerId: string, tagIds: string[]): Pro
   return { ok: true };
 }
 
-/** ลบแบบกู้คืนได้ — ประวัติแชทและแต้มยังอยู่ครบ */
+/** ลบแบบกู้คืนได้ — ประวัติแชทและดีลยังอยู่ครบ */
 export async function deleteCustomer(id: string, opts?: { redirectTo?: string }): Promise<ActionResult> {
   if (!(await requireManager())) return NO_PERMISSION;
   await prisma.customer.update({ where: { id }, data: { deletedAt: new Date() } });

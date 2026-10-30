@@ -69,7 +69,7 @@ export async function listCustomers(f: CustomerFilters) {
         company: true,
         address: true,
         followStatus: true,
-        pointBalance: true,
+        _count: { select: { deals: { where: { stage: { notIn: ["WON", "LOST"] } } } } },
         lastMessageAt: true,
         unreadCount: true,
         deletedAt: true,
@@ -92,9 +92,8 @@ export async function getCustomer(id: string) {
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         include: { author: { select: { name: true } } },
       },
-      pointTransactions: { orderBy: { createdAt: "desc" }, take: 5 },
       messages: { orderBy: { sentAt: "desc" }, take: 5 },
-      _count: { select: { messages: true, pointTransactions: true } },
+      _count: { select: { messages: true } },
     },
   });
 }

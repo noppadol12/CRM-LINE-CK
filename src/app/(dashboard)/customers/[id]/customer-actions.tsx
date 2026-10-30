@@ -41,7 +41,7 @@ export function CustomerActions({
       {canManage && (
         <ConfirmDialog
           title={`ลบ ${name}?`}
-          description="ลูกค้าจะถูกย้ายไปถังขยะ ประวัติแชทและแต้มยังเก็บไว้ครบ และกู้คืนได้ภายหลัง"
+          description="ลูกค้าจะถูกย้ายไปถังขยะ ประวัติแชทและดีลยังเก็บไว้ครบ และกู้คืนได้ภายหลัง"
           confirmLabel="ย้ายไปถังขยะ"
           onConfirm={async () => {
             const r = await deleteCustomer(customer.id!, { redirectTo: "/customers" });

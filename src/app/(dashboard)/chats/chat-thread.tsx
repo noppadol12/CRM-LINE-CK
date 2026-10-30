@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { displayName } from "@/lib/format";
 import { cn, initials } from "@/lib/utils";
 import { MessageBubble, type BubbleMessage } from "./message-bubble";
+import { QuickReplyPicker, type QuickReply } from "./quick-reply-picker";
 
 type ThreadCustomer = {
   id: string;
@@ -37,11 +38,15 @@ export function ChatThread({
   messages,
   hasMore,
   limit,
+  quickReplies,
+  canManage,
 }: {
   customer: ThreadCustomer;
   messages: BubbleMessage[];
   hasMore: boolean;
   limit: number;
+  quickReplies: QuickReply[];
+  canManage: boolean;
 }) {
   const params = useSearchParams();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,6 +88,20 @@ export function ChatThread({
     const el = scrollRef.current;
     if (el && nearBottom.current) el.scrollTop = el.scrollHeight;
   }, [lastId]);
+
+  /** แทรกข้อความสำเร็จรูปตรงตำแหน่งเคอร์เซอร์ */
+  function insertText(snippet: string) {
+    const el = textRef.current;
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    const next = text.slice(0, start) + snippet + text.slice(end);
+    setText(next);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + snippet.length;
+      el?.setSelectionRange(pos, pos);
+    });
+  }
 
   function send() {
     const body = text.trim();
@@ -181,6 +200,12 @@ export function ChatThread({
             }}
             className="flex items-end gap-2"
           >
+            <QuickReplyPicker
+              replies={quickReplies}
+              customerName={customer.fullName || customer.lineName || "ลูกค้า"}
+              onPick={insertText}
+              canManage={canManage}
+            />
             <textarea
               ref={textRef}
               value={text}

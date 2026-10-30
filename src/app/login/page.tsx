@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { MessageCircle, Users, Gift } from "lucide-react";
+import { Handshake, MessageCircle, Users } from "lucide-react";
 import { LoginForm } from "./login-form";
 import { BrandMark } from "@/components/layout/brand";
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "เข้าสู่ระบบ ·
 const HIGHLIGHTS = [
   { icon: Users, text: "ข้อมูลลูกค้าจาก LINE OA รวมไว้ที่เดียว" },
   { icon: MessageCircle, text: "ดูประวัติแชทและตอบลูกค้าได้จากหลังบ้าน" },
-  { icon: Gift, text: "สะสมและแลกแต้มลูกค้าได้ทันที" },
+  { icon: Handshake, text: "ติดตามดีลและใบเสนอราคาจนปิดการขาย" },
 ];
 
 export default function LoginPage() {

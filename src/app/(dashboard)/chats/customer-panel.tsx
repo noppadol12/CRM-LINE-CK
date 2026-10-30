@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Gift, Phone } from "lucide-react";
+import { Building2, Phone } from "lucide-react";
 import { NotesPanel } from "@/components/customers/notes-panel";
 import { TagEditor } from "@/components/customers/tag-editor";
 import { FollowStatusBadge } from "@/components/customers/follow-status";
@@ -7,15 +7,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Thread } from "@/lib/chats";
 import type { TagWithCount } from "@/lib/customers";
 import { displayName, formatPhone } from "@/lib/format";
-import { initials, thNumber } from "@/lib/utils";
+import { initials } from "@/lib/utils";
+import { CustomerDeals } from "@/components/deals/customer-deals";
+import type { Owner } from "@/components/deals/deal-form-dialog";
+import type { DealDTO } from "@/lib/deals";
 
 export function CustomerPanel({
   thread,
   tags,
+  deals,
+  owners,
   currentUserId,
   canManage,
 }: {
   thread: Thread;
+  deals: DealDTO[];
+  owners: Owner[];
   tags: TagWithCount[];
   currentUserId: string;
   canManage: boolean;
@@ -42,11 +49,6 @@ export function CustomerPanel({
 
       <dl className="space-y-2.5 rounded-lg border bg-card p-3 text-sm">
         <div className="flex items-center gap-2.5">
-          <Gift className="size-4 text-muted-foreground" />
-          <dt className="text-muted-foreground">แต้ม</dt>
-          <dd className="ml-auto font-semibold tabular-nums">{thNumber.format(c.pointBalance)}</dd>
-        </div>
-        <div className="flex items-center gap-2.5">
           <Phone className="size-4 text-muted-foreground" />
           <dt className="sr-only">เบอร์โทร</dt>
           <dd className="truncate">
@@ -67,6 +69,8 @@ export function CustomerPanel({
           </div>
         )}
       </dl>
+
+      <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={canManage} compact />
 
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">แท็ก</p>

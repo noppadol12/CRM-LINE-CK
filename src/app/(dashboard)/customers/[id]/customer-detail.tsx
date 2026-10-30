@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Building2,
   CalendarDays,
-  Gift,
+  Handshake,
   Mail,
   MapPin,
   MessageCircle,
@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { FollowStatusBadge } from "@/components/customers/follow-status";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer, listTags } from "@/lib/customers";
+import { listCustomerDeals, listOwners } from "@/lib/deals";
+import { baht, OPEN_STAGES } from "@/lib/deal-stages";
+import { CustomerDeals } from "@/components/deals/customer-deals";
 import { displayName, formatDate, formatDateTime, formatPhone, timeAgo } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
 import { cn, initials, thNumber } from "@/lib/utils";
@@ -27,12 +29,11 @@ import { CustomerActions, RestoreBanner } from "./customer-actions";
 import { NotesPanel } from "@/components/customers/notes-panel";
 import { TagEditor } from "@/components/customers/tag-editor";
 
-const POINT_TYPE: Record<string, string> = { EARN: "ได้รับ", REDEEM: "แลก", ADJUST: "ปรับยอด", EXPIRE: "หมดอายุ" };
 
 export async function CustomerDetailView({ params }: { params: PageProps<"/customers/[id]">["params"] }) {
   const user = await getCurrentUser();
   const { id } = await params;
-  const [c, allTags] = await Promise.all([getCustomer(id), listTags()]);
+  const [c, allTags, deals, owners] = await Promise.all([getCustomer(id), listTags(), listCustomerDeals(id), listOwners()]);
   if (!c) notFound();
 
   const name = displayName(c);
@@ -92,7 +93,13 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
           )}
         </div>
         <div className="grid grid-cols-3 divide-x border-t">
-          <Stat icon={Gift} label="แต้มคงเหลือ" value={`${thNumber.format(c.pointBalance)}`} />
+          <Stat
+            icon={Handshake}
+            label="ดีลเปิดอยู่"
+            value={`${deals.filter((d) => OPEN_STAGES.includes(d.stage)).length} · ${baht.format(
+              deals.filter((d) => OPEN_STAGES.includes(d.stage)).reduce((sum, d) => sum + (d.amount ?? 0), 0),
+            )}`}
+          />
           <Stat icon={MessagesSquare} label="ข้อความทั้งหมด" value={thNumber.format(c._count.messages)} />
           <Stat
             icon={CalendarDays}
@@ -167,8 +174,13 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
           </Card>
         </div>
 
-        {/* ===== ขวา: โน้ต + แชท + แต้ม ===== */}
+        {/* ===== ขวา: ดีล + โน้ต + แชท ===== */}
         <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardContent>
+              <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={manager} />
+            </CardContent>
+          </Card>
           <NotesPanel
             customerId={c.id}
             currentUserId={user.id}
@@ -215,42 +227,13 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
             </CardContent>
           </Card>
 
-          <Card className="gap-0">
-            <CardHeader className="flex-row items-center justify-between border-b pb-4">
-              <CardTitle className="text-base">ประวัติแต้มล่าสุด</CardTitle>
-              <Badge variant="soft">เพิ่ม/หักแต้ม ใน Phase 6</Badge>
-            </CardHeader>
-            <CardContent className="px-0">
-              {c.pointTransactions.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">ยังไม่มีรายการแต้ม</p>
-              ) : (
-                <ul className="divide-y">
-                  {c.pointTransactions.map((t) => (
-                    <li key={t.id} className="flex items-center gap-3 px-5 py-3 text-sm">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate">{t.reason}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {POINT_TYPE[t.type]} · {formatDateTime(t.createdAt)}
-                          {t.referenceNo && ` · ${t.referenceNo}`}
-                        </p>
-                      </div>
-                      <span className={cn("font-semibold tabular-nums", t.amount >= 0 ? "text-emerald-600" : "text-rose-600")}>
-                        {t.amount >= 0 ? "+" : ""}
-                        {thNumber.format(t.amount)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </>
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: typeof Gift; label: string; value: string }) {
+function Stat({ icon: Icon, label, value }: { icon: typeof Handshake; label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3.5 sm:px-6">
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">

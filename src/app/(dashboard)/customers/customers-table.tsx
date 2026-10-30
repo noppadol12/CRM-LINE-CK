@@ -50,7 +50,7 @@ export function CustomersTable({ rows, trash, canManage, hasFilter }: Props) {
           <TableHead className="pl-5">ลูกค้า</TableHead>
           <TableHead className="hidden md:table-cell">เบอร์โทร</TableHead>
           <TableHead className="hidden lg:table-cell">แท็ก</TableHead>
-          <TableHead className="hidden text-right sm:table-cell">แต้ม</TableHead>
+          <TableHead className="hidden text-right sm:table-cell">ดีลเปิด</TableHead>
           <TableHead className="hidden xl:table-cell">สถานะ LINE</TableHead>
           <TableHead className="hidden md:table-cell">{trash ? "ลบเมื่อ" : "ติดต่อล่าสุด"}</TableHead>
           <TableHead className="w-12" />
@@ -107,7 +107,7 @@ export function CustomersTable({ rows, trash, canManage, hasFilter }: Props) {
                 </div>
               </TableCell>
               <TableCell className="hidden text-right font-medium tabular-nums sm:table-cell">
-                {thNumber.format(c.pointBalance)}
+                {c._count.deals > 0 ? thNumber.format(c._count.deals) : <span className="font-normal text-muted-foreground">—</span>}
               </TableCell>
               <TableCell className="hidden xl:table-cell">
                 <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} />
@@ -190,7 +190,7 @@ function RowMenu({ row, canManage }: { row: CustomerRow; canManage: boolean }) {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title={`ลบ ${name}?`}
-        description="ลูกค้าจะถูกย้ายไปถังขยะ ประวัติแชทและแต้มยังเก็บไว้ครบ และกู้คืนได้ภายหลัง"
+        description="ลูกค้าจะถูกย้ายไปถังขยะ ประวัติแชทและดีลยังเก็บไว้ครบ และกู้คืนได้ภายหลัง"
         confirmLabel="ย้ายไปถังขยะ"
         onConfirm={async () => {
           const r = await deleteCustomer(row.id);
