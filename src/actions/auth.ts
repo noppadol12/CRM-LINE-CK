@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/session";
+import { authSecretProblem, getSession } from "@/lib/session";
 
 export type LoginState = { error?: string; email?: string } | undefined;
 
@@ -17,18 +17,32 @@ const LoginSchema = z.object({
 const DUMMY_HASH = "$2b$10$ZBCV2m0QBVzuawCxjgKzKuSR1CCB5QbhjFTxU8DaExHCKsp.slHu2";
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "");
+
+  // ตรวจการตั้งค่าก่อน เพื่อแสดงข้อความที่แก้ได้ แทนหน้า error ของ server
+  const configProblem = authSecretProblem();
+  if (configProblem) {
+    console.error(`[login] ${configProblem}`);
+    return { error: `ระบบยังตั้งค่าไม่ครบ: ${configProblem}`, email };
+  }
+
   const parsed = LoginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
   });
-  const email = String(formData.get("email") ?? "");
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง", email };
   }
 
-  const user = await prisma.adminUser.findUnique({ where: { email: parsed.data.email } });
-  const ok = await bcrypt.compare(parsed.data.password, user?.passwordHash ?? DUMMY_HASH);
+  let user;
+  try {
+    user = await prisma.adminUser.findUnique({ where: { email: parsed.data.email } });
+  } catch (error) {
+    console.error("[login] database error", error);
+    return { error: "เชื่อมต่อฐานข้อมูลไม่ได้ กรุณาลองใหม่อีกครั้ง", email };
+  }
 
+  const ok = await bcrypt.compare(parsed.data.password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !user.passwordHash || !ok) {
     return { error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง", email };
   }

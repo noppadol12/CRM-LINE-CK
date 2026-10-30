@@ -10,7 +10,7 @@ const PUBLIC_PATHS = ["/login"];
 
 async function hasValidSession(request: NextRequest): Promise<boolean> {
   const seal = request.cookies.get(COOKIE)?.value;
-  const password = process.env.AUTH_SECRET;
+  const password = process.env.AUTH_SECRET?.trim();
   if (!seal || !password) return false;
   try {
     const data = await unsealData<{ userId?: string }>(seal, { password });
