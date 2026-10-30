@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import type { AdminRole } from "@/generated/prisma/client";
@@ -18,6 +19,8 @@ export type CurrentUser = {
  * (proxy.ts เป็นแค่ด่านแรกแบบเร็ว ไม่ใช่ตัวตรวจสิทธิ์จริง)
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
+  // ข้อมูลของผู้ใช้แต่ละคนต้องคำนวณตอน request เท่านั้น (iron-session ใช้ Date.now() ตอนถอดรหัส)
+  await connection();
   const session = await getSession();
   if (!session.userId) redirect("/login");
 
