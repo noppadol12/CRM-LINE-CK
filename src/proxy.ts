@@ -6,7 +6,7 @@ import { unsealData } from "iron-session";
  * การตรวจสิทธิ์จริงทำใน getCurrentUser() (src/lib/auth.ts) ทุกครั้งที่อ่านข้อมูล
  */
 const COOKIE = "ckcrm_session";
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/privacy"];
 
 async function hasValidSession(request: NextRequest): Promise<boolean> {
   const seal = request.cookies.get(COOKIE)?.value;
@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
     if (pathname !== "/" && pathname !== "/dashboard") url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
-  if (loggedIn && (isPublic || pathname === "/")) {
+  if (loggedIn && (pathname === "/login" || pathname === "/")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
   return NextResponse.next();
