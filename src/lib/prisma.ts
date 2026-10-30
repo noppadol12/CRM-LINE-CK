@@ -18,9 +18,12 @@ function resolveConnectionString(): string {
 }
 
 function createClient() {
+  const connectionString = resolveConnectionString();
+  const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(connectionString);
   const adapter = new PrismaPg({
-    connectionString: resolveConnectionString(),
-    ssl: { rejectUnauthorized: false },
+    connectionString,
+    // Supabase ใช้ SSL แต่ cert chain ไม่ผ่านการตรวจของ node-postgres; ฐานข้อมูลในเครื่องไม่มี SSL
+    ssl: isLocal ? false : { rejectUnauthorized: false },
     max: 5,
   });
   return new PrismaClient({ adapter });

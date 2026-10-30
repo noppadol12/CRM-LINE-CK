@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+/* ============================================================
+   CK CRM theme — shadcn/ui tokens
+   เปลี่ยนสีหลักของแบรนด์ได้ที่ --primary ที่เดียว
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.625rem;
+
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.21 0.02 260);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+
+  /* LINE green — ใช้กับปุ่มหลัก ลิงก์ที่เลือก และไฮไลต์ */
+  --primary: oklch(0.62 0.17 152);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-soft: oklch(0.96 0.04 152);
+  --primary-soft-foreground: oklch(0.42 0.12 152);
+
+  --secondary: oklch(0.965 0.004 247);
+  --secondary-foreground: oklch(0.28 0.02 260);
+  --muted: oklch(0.965 0.004 247);
+  --muted-foreground: oklch(0.55 0.02 257);
+  --accent: oklch(0.965 0.004 247);
+  --accent-foreground: oklch(0.21 0.02 260);
+  --destructive: oklch(0.58 0.22 27);
+
+  --border: oklch(0.92 0.005 255);
+  --input: oklch(0.9 0.006 255);
+  --ring: oklch(0.62 0.17 152);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.37 0.02 257);
+  --sidebar-border: oklch(0.93 0.005 255);
 }
 
 @theme inline {
+  --font-sans: var(--font-sans-thai), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "tnum" 1;
+  }
 }

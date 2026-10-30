@@ -3,6 +3,7 @@
  * รันเฉพาะเมื่อ SEED_DEMO=true และรันซ้ำได้ (ไม่สร้างข้อมูลซ้ำ)
  */
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
 
 const TAGS = [
@@ -42,7 +43,39 @@ const CONVERSATIONS: Record<number, { dir: "INBOUND" | "OUTBOUND"; text: string 
   5: [{ dir: "INBOUND", text: "ร้านเปิดวันเสาร์ไหมครับ" }],
 };
 
+/**
+ * สร้างบัญชีเจ้าของ (OWNER) คนแรกจาก ADMIN_EMAIL + ADMIN_PASSWORD
+ * - ถ้ามีอีเมลนี้อยู่แล้วจะไม่แตะรหัสผ่าน (ลบ ADMIN_PASSWORD ออกหลังล็อกอินได้เลย)
+ * - ลืมรหัสผ่าน: ตั้ง ADMIN_RESET_PASSWORD=true + ADMIN_PASSWORD ใหม่ แล้ว redeploy
+ */
+async function bootstrapAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) {
+    console.log("seed: ข้ามการสร้างแอดมิน (ไม่ได้ตั้ง ADMIN_EMAIL / ADMIN_PASSWORD)");
+    return;
+  }
+  if (password.length < 8) throw new Error("ADMIN_PASSWORD ต้องยาวอย่างน้อย 8 ตัวอักษร");
+
+  const existing = await prisma.adminUser.findUnique({ where: { email } });
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  if (!existing) {
+    await prisma.adminUser.create({
+      data: { email, name: process.env.ADMIN_NAME?.trim() || "เจ้าของระบบ", role: "OWNER", passwordHash },
+    });
+    console.log(`seed: สร้างบัญชีเจ้าของ ${email} แล้ว`);
+  } else if (process.env.ADMIN_RESET_PASSWORD === "true") {
+    await prisma.adminUser.update({ where: { email }, data: { passwordHash, isActive: true } });
+    console.log(`seed: รีเซ็ตรหัสผ่าน ${email} แล้ว — อย่าลืมลบ ADMIN_RESET_PASSWORD`);
+  } else {
+    console.log(`seed: มีบัญชี ${email} อยู่แล้ว`);
+  }
+}
+
 async function main() {
+  await bootstrapAdmin();
+
   if (process.env.SEED_DEMO !== "true") {
     console.log("seed: ข้าม (ตั้ง SEED_DEMO=true เพื่อใส่ข้อมูลตัวอย่าง)");
     return;
