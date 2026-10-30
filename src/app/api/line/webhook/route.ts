@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { validateSignature, type webhook } from "@line/bot-sdk";
 import { Prisma } from "@/generated/prisma/client";
 import { getChannelSecret } from "@/lib/line";
-import { processLineEvent } from "@/lib/line-events";
+import { maybeRunMaintenance, processStoredEvent } from "@/lib/maintenance";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -12,6 +12,8 @@ import { prisma } from "@/lib/prisma";
  * 2. บันทึก event ดิบลง webhook_events ทันที (id = webhookEventId กันประมวลผลซ้ำเมื่อ LINE ส่งซ้ำ)
  * 3. ตอบ 200 ให้ LINE เร็วที่สุด แล้วค่อยประมวลผลต่อด้วย after()
  */
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const secret = getChannelSecret();
   if (!secret) {
@@ -57,20 +59,10 @@ export async function POST(request: Request) {
   after(async () => {
     // เรียงตามเวลา เพื่อให้ follow มาก่อน message เมื่อมาพร้อมกัน
     for (const event of fresh.sort((a, b) => a.timestamp - b.timestamp)) {
-      try {
-        const result = await processLineEvent(event);
-        await prisma.webhookEvent.update({
-          where: { id: event.webhookEventId },
-          data: { processedAt: new Date(), error: result.startsWith("skip") ? result : null },
-        });
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        console.error(`[webhook] process ${event.webhookEventId} failed`, e);
-        await prisma.webhookEvent
-          .update({ where: { id: event.webhookEventId }, data: { error: message.slice(0, 1000) } })
-          .catch(() => undefined);
-      }
+      await processStoredEvent(event);
     }
+    // ถือโอกาสเก็บงานค้าง (event ผิดพลาด / ไฟล์ที่ยังไม่ได้ลง Drive) ไม่เกินทุก 15 นาที
+    await maybeRunMaintenance();
   });
 
   return Response.json({ ok: true, received: events.length, new: fresh.length });

@@ -1,10 +1,12 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import type { ActionResult } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 
 const PasswordSchema = z
   .object({
@@ -30,9 +32,17 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
     return { ok: false, error: "รหัสผ่านปัจจุบันไม่ถูกต้อง" };
   }
 
-  await prisma.adminUser.update({
+  if (parsed.data.next === parsed.data.current) return { ok: false, error: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม" };
+
+  // เพิ่ม sessionVersion → เครื่องอื่นที่ล็อกอินค้างไว้ถูกออกจากระบบ ส่วนเครื่องนี้อัปเดต session ให้ใช้ต่อได้
+  const updated = await prisma.adminUser.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(parsed.data.next, 10) },
+    data: { passwordHash: await bcrypt.hash(parsed.data.next, 10), mustChangePassword: false, sessionVersion: { increment: 1 } },
+    select: { sessionVersion: true },
   });
-  return { ok: true, message: "เปลี่ยนรหัสผ่านแล้ว" };
+  const session = await getSession();
+  session.v = updated.sessionVersion;
+  await session.save();
+  refresh();
+  return { ok: true, message: "เปลี่ยนรหัสผ่านแล้ว เครื่องอื่นที่ล็อกอินไว้จะถูกออกจากระบบ" };
 }

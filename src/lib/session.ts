@@ -4,6 +4,8 @@ import { getIronSession, type SessionOptions } from "iron-session";
 
 export type SessionData = {
   userId?: string;
+  /** ต้องตรงกับ admin_users.sessionVersion — เปลี่ยนรหัส/ปิดบัญชีแล้ว session เก่าใช้ไม่ได้ */
+  v?: number;
 };
 
 export const SESSION_COOKIE = "ckcrm_session";

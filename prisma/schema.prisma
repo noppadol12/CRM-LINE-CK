@@ -27,6 +27,10 @@ model AdminUser {
   passwordHash String?
   role         AdminRole @default(SALES)
   isActive     Boolean   @default(true)
+  // เพิ่มทุกครั้งที่เปลี่ยน/รีเซ็ตรหัสผ่าน หรือปิดบัญชี → session เก่าทุกเครื่องใช้ไม่ได้ทันที
+  sessionVersion     Int       @default(0)
+  mustChangePassword Boolean   @default(false) // รหัสชั่วคราวที่หัวหน้าตั้งให้
+  lastLoginAt        DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -75,7 +79,7 @@ model Customer {
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  deletedAt DateTime? // soft delete — ไม่ลบประวัติแชท/แต้มทิ้ง
+  deletedAt DateTime? // soft delete — ไม่ลบประวัติแชท/ดีลทิ้ง
 
   tags     CustomerTag[]
   messages ChatMessage[]
@@ -138,7 +142,15 @@ model ChatMessage {
   direction  MessageDirection
   type       MessageType      @default(TEXT)
   text       String?
-  mediaUrl   String? // ไฟล์ที่เราเก็บเอง (LINE ไม่เก็บถาวร)
+  mediaUrl   String? // (สำรอง) ลิงก์ไฟล์ภายนอก
+
+  // สำเนาไฟล์ใน Google Drive (LINE เก็บไฟล์ไว้ชั่วคราวเท่านั้น)
+  driveFileId   String?
+  mediaMime     String?
+  mediaSize     Int?
+  mediaAttempts Int       @default(0)
+  mediaError    String?
+  mediaSavedAt  DateTime?
   payload    Json? // message object ดิบจาก LINE (sticker id, location ฯลฯ)
 
   lineMessageId String? @unique // กันข้อความซ้ำเมื่อ LINE retry
@@ -151,6 +163,7 @@ model ChatMessage {
   sentBy   AdminUser? @relation(fields: [sentById], references: [id], onDelete: SetNull)
 
   @@index([customerId, sentAt])
+  @@index([type, driveFileId])
   @@map("chat_messages")
 }
 
@@ -255,7 +268,32 @@ model WebhookEvent {
   receivedAt  DateTime  @default(now())
   processedAt DateTime?
   error       String?
+  attempts    Int       @default(1)
 
   @@index([receivedAt])
   @@map("webhook_events")
+}
+
+// ---------- ค่าตั้งระบบ (เช่น การเชื่อมต่อ Google Drive) ----------
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+// ---------- กันเดารหัสผ่าน ----------
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
 }

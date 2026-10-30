@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { getLineClient } from "@/lib/line";
+import { retryFailedEvents } from "@/lib/maintenance";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
 
 function describeError(e: unknown): string {
@@ -37,4 +38,14 @@ export async function testLineWebhook(): Promise<ActionResult> {
   } catch (e) {
     return { ok: false, error: `ทดสอบไม่สำเร็จ: ${describeError(e)}` };
   }
+}
+
+/** ลองประมวลผล event ที่ผิดพลาดอีกครั้ง */
+export async function retryWebhookEvents(): Promise<ActionResult> {
+  if (!(await requireManager())) return NO_PERMISSION;
+  const r = await retryFailedEvents({ deadline: Date.now() + 40_000, minAgeMs: 0 });
+  refresh();
+  if (r.found === 0) return { ok: true, message: "ไม่มี event ค้าง" };
+  if (r.failed > 0) return { ok: false, error: `สำเร็จ ${r.ok} รายการ ยังผิดพลาด ${r.failed} รายการ` };
+  return { ok: true, message: `ประมวลผลใหม่สำเร็จ ${r.ok} รายการ` };
 }

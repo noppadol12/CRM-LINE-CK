@@ -3,6 +3,7 @@ import type { webhook } from "@line/bot-sdk";
 import { Prisma } from "@/generated/prisma/client";
 import type { MessageType } from "@/generated/prisma/client";
 import { fetchLineProfile } from "@/lib/line";
+import { MEDIA_TYPES, saveMessageMedia } from "@/lib/media";
 import { prisma } from "@/lib/prisma";
 
 const PROFILE_REFRESH_MS = 24 * 60 * 60 * 1000; // อัปเดตชื่อ/รูปจาก LINE วันละครั้งพอ
@@ -115,8 +116,10 @@ export async function processLineEvent(event: webhook.Event): Promise<string> {
       const { type, text, preview } = describeMessage(e.message);
       const sentAt = new Date(e.timestamp);
 
+      let created: { id: string };
       try {
-        await prisma.chatMessage.create({
+        created = await prisma.chatMessage.create({
+          select: { id: true },
           data: {
             customerId: customer.id,
             direction: "INBOUND",
@@ -138,6 +141,12 @@ export async function processLineEvent(event: webhook.Event): Promise<string> {
         where: { id: customer.id, OR: [{ lastMessageAt: null }, { lastMessageAt: { lt: sentAt } }] },
         data: { lastMessageAt: sentAt, lastMessagePreview: preview.slice(0, 200) },
       });
+
+      // รูป/วิดีโอ/ไฟล์ → คัดลอกไป Google Drive ทันที (ถ้าเชื่อมไว้) เพราะ LINE เก็บไว้ชั่วคราว
+      if (MEDIA_TYPES.includes(type)) {
+        const saved = await saveMessageMedia(created.id);
+        return `message:${type}:${saved}`;
+      }
       return `message:${type}`;
     }
 

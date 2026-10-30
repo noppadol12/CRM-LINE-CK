@@ -11,7 +11,26 @@ export type CurrentUser = {
   name: string;
   email: string;
   role: AdminRole;
+  mustChangePassword: boolean;
 };
+
+const USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  isActive: true,
+  sessionVersion: true,
+  mustChangePassword: true,
+} as const;
+
+/** ตรวจ session กับข้อมูลในฐานข้อมูล — คืน null ถ้าใช้ไม่ได้ (ไม่ redirect) */
+async function resolveUser(session: { userId?: string; v?: number }): Promise<CurrentUser | null> {
+  if (!session.userId) return null;
+  const user = await prisma.adminUser.findUnique({ where: { id: session.userId }, select: USER_SELECT });
+  if (!user || !user.isActive || (session.v ?? 0) !== user.sessionVersion) return null;
+  return { id: user.id, name: user.name, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword };
+}
 
 /**
  * Data Access Layer: อ่าน session → ตรวจผู้ใช้ในฐานข้อมูล → คืนข้อมูลแบบย่อ
@@ -22,16 +41,19 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   // ข้อมูลของผู้ใช้แต่ละคนต้องคำนวณตอน request เท่านั้น (iron-session ใช้ Date.now() ตอนถอดรหัส)
   await connection();
   const session = await getSession();
-  if (!session.userId) redirect("/login");
-
-  const user = await prisma.adminUser.findUnique({
-    where: { id: session.userId },
-    select: { id: true, name: true, email: true, role: true, isActive: true },
-  });
-  if (!user || !user.isActive) redirect("/login");
-
-  return { id: user.id, name: user.name, email: user.email, role: user.role };
+  const user = await resolveUser(session);
+  if (!user) redirect(session.userId ? "/api/auth/expired" : "/login");
+  return user;
 });
+
+/** สำหรับ Route Handler (/api/*) — คืน null แทนการ redirect */
+export async function getApiUser(): Promise<CurrentUser | null> {
+  try {
+    return await resolveUser(await getSession());
+  } catch {
+    return null;
+  }
+}
 
 export const ROLE_LABEL: Record<AdminRole, string> = {
   OWNER: "เจ้าของ",

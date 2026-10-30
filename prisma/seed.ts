@@ -66,7 +66,8 @@ async function bootstrapAdmin() {
     });
     console.log(`seed: สร้างบัญชีเจ้าของ ${email} แล้ว`);
   } else if (process.env.ADMIN_RESET_PASSWORD === "true") {
-    await prisma.adminUser.update({ where: { email }, data: { passwordHash, isActive: true } });
+    await prisma.adminUser.update({ where: { email }, data: { passwordHash, isActive: true, sessionVersion: { increment: 1 } } });
+    await prisma.loginAttempt.deleteMany({ where: { email } });
     console.log(`seed: รีเซ็ตรหัสผ่าน ${email} แล้ว — อย่าลืมลบ ADMIN_RESET_PASSWORD`);
   } else {
     console.log(`seed: มีบัญชี ${email} อยู่แล้ว`);

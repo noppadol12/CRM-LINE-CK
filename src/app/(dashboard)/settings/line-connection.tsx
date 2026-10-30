@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { cn, thNumber } from "@/lib/utils";
 import { CopyButton } from "@/components/copy-button";
 import { WebhookActions } from "./webhook-actions";
+import { RetryWebhooksButton } from "./retry-webhooks-button";
 
 type Check = { ok: boolean | null; label: string; detail?: string };
 
@@ -26,7 +27,7 @@ async function expectedWebhookUrl() {
 async function loadLineStatus() {
   const client = getLineClient();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [bot, endpoint, last, count24h, failed] = await Promise.all([
+  const [bot, endpoint, last, count24h, failed, stuck] = await Promise.all([
     client?.getBotInfo().catch((e: Error) => ({ error: e.message })) ?? null,
     client?.getWebhookEndpoint().catch(() => null) ?? null,
     prisma.webhookEvent.findFirst({ orderBy: { receivedAt: "desc" }, select: { receivedAt: true, type: true } }),
@@ -34,15 +35,22 @@ async function loadLineStatus() {
     prisma.webhookEvent.count({
       where: { receivedAt: { gte: since }, error: { not: null }, NOT: { error: { startsWith: "skip" } } },
     }),
+    // ยังไม่ได้ประมวลผล (ผิดพลาด หรือค้างเกิน 2 นาที) ภายใน 7 วัน
+    prisma.webhookEvent.count({
+      where: {
+        processedAt: null,
+        receivedAt: { lte: new Date(Date.now() - 2 * 60_000), gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+      },
+    }),
   ]);
-  return { hasClient: Boolean(client), bot, endpoint, last, count24h, failed };
+  return { hasClient: Boolean(client), bot, endpoint, last, count24h, failed, stuck };
 }
 
 export async function LineConnection() {
   const user = await getCurrentUser();
   const hasSecret = Boolean(getChannelSecret());
   const url = await expectedWebhookUrl();
-  const { hasClient, bot, endpoint, last, count24h, failed } = await loadLineStatus();
+  const { hasClient, bot, endpoint, last, count24h, failed, stuck } = await loadLineStatus();
   const client = hasClient;
 
   const botOk = bot && !("error" in bot) ? bot : null;
@@ -137,6 +145,8 @@ export async function LineConnection() {
             </p>
           </div>
         </div>
+
+        {canManage(user) && stuck > 0 && <RetryWebhooksButton count={stuck} />}
       </CardContent>
     </Card>
   );
