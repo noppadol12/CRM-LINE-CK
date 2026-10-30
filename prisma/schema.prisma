@@ -1,0 +1,222 @@
+// =============================================================
+//  CK CRM — Database schema
+//  Customers · Tags · Chat logs (LINE) · Admin notes · Points
+// =============================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Admin users (ทีมเซลส์ / แอดมิน) ----------
+
+enum AdminRole {
+  OWNER
+  ADMIN
+  SALES
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String?
+  role         AdminRole @default(SALES)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignedCustomers Customer[]         @relation("CustomerAssignee")
+  notes             AdminNote[]
+  sentMessages      ChatMessage[]
+  pointTransactions PointTransaction[]
+
+  @@map("admin_users")
+}
+
+// ---------- Customers ----------
+
+enum FollowStatus {
+  FOLLOWING // เพิ่มเพื่อน OA อยู่
+  UNFOLLOWED // บล็อก / เลิกติดตาม
+  UNKNOWN // เพิ่มเองจากหลังบ้าน ยังไม่ผูก LINE
+}
+
+model Customer {
+  id            String  @id @default(cuid())
+  lineUserId    String? @unique // LINE UID (U + 32 hex) — null ได้ถ้าเพิ่มลูกค้าเอง
+  lineName      String? // displayName จากโปรไฟล์ LINE
+  pictureUrl    String?
+  statusMessage String?
+
+  fullName String? // ชื่อจริงที่แอดมินกรอก
+  phone    String?
+  email    String?
+  company  String?
+  address  String?
+
+  followStatus FollowStatus @default(UNKNOWN)
+  followedAt   DateTime?
+  unfollowedAt DateTime?
+
+  // ยอดแต้มคงเหลือ (cache) — อัปเดตใน transaction เดียวกับ PointTransaction เสมอ
+  pointBalance Int @default(0)
+
+  // สำหรับหน้า Inbox
+  lastMessageAt      DateTime?
+  lastMessagePreview String?
+  unreadCount        Int       @default(0)
+
+  assignedToId String?
+  assignedTo   AdminUser? @relation("CustomerAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete — ไม่ลบประวัติแชท/แต้มทิ้ง
+
+  tags              CustomerTag[]
+  messages          ChatMessage[]
+  notes             AdminNote[]
+  pointTransactions PointTransaction[]
+
+  @@index([phone])
+  @@index([lastMessageAt(sort: Desc)])
+  @@index([deletedAt])
+  @@map("customers")
+}
+
+// ---------- Tags ----------
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("slate") // ชื่อสี Tailwind เช่น emerald, amber, sky
+  createdAt DateTime @default(now())
+
+  customers CustomerTag[]
+
+  @@map("tags")
+}
+
+model CustomerTag {
+  customerId String
+  tagId      String
+  assignedAt DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, tagId])
+  @@index([tagId])
+  @@map("customer_tags")
+}
+
+// ---------- Chat logs ----------
+
+enum MessageDirection {
+  INBOUND // ลูกค้า → OA
+  OUTBOUND // แอดมิน → ลูกค้า
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  STICKER
+  LOCATION
+  OTHER
+}
+
+model ChatMessage {
+  id         String           @id @default(cuid())
+  customerId String
+  direction  MessageDirection
+  type       MessageType      @default(TEXT)
+  text       String?
+  mediaUrl   String? // ไฟล์ที่เราเก็บเอง (LINE ไม่เก็บถาวร)
+  payload    Json? // message object ดิบจาก LINE (sticker id, location ฯลฯ)
+
+  lineMessageId String? @unique // กันข้อความซ้ำเมื่อ LINE retry
+  sentById      String? // แอดมินที่ส่ง (OUTBOUND)
+
+  sentAt DateTime  @default(now())
+  readAt DateTime?
+
+  customer Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  sentBy   AdminUser? @relation(fields: [sentById], references: [id], onDelete: SetNull)
+
+  @@index([customerId, sentAt])
+  @@map("chat_messages")
+}
+
+// ---------- Internal admin notes (ลูกค้ามองไม่เห็น) ----------
+
+model AdminNote {
+  id         String   @id @default(cuid())
+  customerId String
+  authorId   String?
+  body       String
+  isPinned   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  author   AdminUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@map("admin_notes")
+}
+
+// ---------- Points ledger (append-only) ----------
+
+enum PointTransactionType {
+  EARN // ได้แต้มจากการซื้อ
+  REDEEM // ใช้แต้มแลกของ
+  ADJUST // ปรับยอดโดยแอดมิน / ยกเลิกรายการ
+  EXPIRE // แต้มหมดอายุ
+}
+
+model PointTransaction {
+  id           String               @id @default(cuid())
+  customerId   String
+  type         PointTransactionType
+  amount       Int // + เพิ่ม / - หัก
+  balanceAfter Int
+  reason       String
+  referenceNo  String? // เลขที่บิล / ใบกำกับ
+
+  // ห้ามแก้ไขรายการ — ถ้าผิดให้สร้างรายการกลับที่ชี้มาที่รายการเดิม
+  reversalOfId String?           @unique
+  reversalOf   PointTransaction? @relation("Reversal", fields: [reversalOfId], references: [id])
+  reversedBy   PointTransaction? @relation("Reversal")
+
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy AdminUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([customerId, createdAt])
+  @@map("point_transactions")
+}
+
+// ---------- Raw LINE webhook log ----------
+
+model WebhookEvent {
+  id          String    @id // webhookEventId จาก LINE (กันประมวลผลซ้ำ)
+  type        String
+  lineUserId  String?
+  payload     Json
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  error       String?
+
+  @@index([receivedAt])
+  @@map("webhook_events")
+}

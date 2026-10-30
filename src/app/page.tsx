@@ -3,7 +3,7 @@ export default function Home() {
     { label: "Next.js App Router", done: true },
     { label: "Tailwind CSS", done: true },
     { label: "Deploy บน Vercel", done: true },
-    { label: "ฐานข้อมูล (Phase 1)", done: false },
+    { label: "ฐานข้อมูล Prisma + Supabase", done: true },
     { label: "ระบบล็อกอิน (Phase 2)", done: false },
   ];
 

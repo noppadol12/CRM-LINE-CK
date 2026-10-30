@@ -1,0 +1,131 @@
+/**
+ * ข้อมูลตัวอย่างสำหรับทดสอบหน้าจอ
+ * รันเฉพาะเมื่อ SEED_DEMO=true และรันซ้ำได้ (ไม่สร้างข้อมูลซ้ำ)
+ */
+import "dotenv/config";
+import { prisma } from "../src/lib/prisma";
+
+const TAGS = [
+  { name: "VIP", color: "amber" },
+  { name: "ช่างแอร์", color: "sky" },
+  { name: "ผู้รับเหมา", color: "violet" },
+  { name: "ลูกค้าโครงการ", color: "emerald" },
+  { name: "สนใจวาล์ว", color: "rose" },
+];
+
+const CUSTOMERS = [
+  { lineUserId: "Udemo0000000000000000000000000001", lineName: "Somchai Air", fullName: "สมชาย ใจดี", phone: "081-234-5678", company: "สมชายแอร์เซอร์วิส", tags: ["ช่างแอร์", "VIP"], points: 1250 },
+  { lineUserId: "Udemo0000000000000000000000000002", lineName: "Nok", fullName: "วรรณา ศรีสุข", phone: "089-111-2233", company: null, tags: ["สนใจวาล์ว"], points: 120 },
+  { lineUserId: "Udemo0000000000000000000000000003", lineName: "BKK Chiller Co.", fullName: "ประเสริฐ วงศ์ทอง", phone: "02-555-0199", company: "บางกอกชิลเลอร์ จำกัด", tags: ["ลูกค้าโครงการ", "VIP"], points: 4800 },
+  { lineUserId: "Udemo0000000000000000000000000004", lineName: "Tum Engineer", fullName: "ธนากร มีสุข", phone: "086-777-8899", company: "TK Engineering", tags: ["ผู้รับเหมา"], points: 640 },
+  { lineUserId: "Udemo0000000000000000000000000005", lineName: "Ploy", fullName: null, phone: null, company: null, tags: [], points: 0 },
+  { lineUserId: "Udemo0000000000000000000000000006", lineName: "Anan Cooling", fullName: "อนันต์ เย็นใจ", phone: "084-321-6547", company: "อนันต์คูลลิ่ง", tags: ["ช่างแอร์"], points: 310 },
+];
+
+const CONVERSATIONS: Record<number, { dir: "INBOUND" | "OUTBOUND"; text: string }[]> = {
+  0: [
+    { dir: "INBOUND", text: "สวัสดีครับ มี Expansion valve รุ่น TEX2 ไหมครับ" },
+    { dir: "OUTBOUND", text: "สวัสดีครับคุณสมชาย มีพร้อมส่งครับ ต้องการกี่ตัวครับ" },
+    { dir: "INBOUND", text: "เอา 3 ตัวครับ ส่งพรุ่งนี้ได้ไหม" },
+  ],
+  1: [
+    { dir: "INBOUND", text: "สอบถามราคา Solenoid valve 1/2 นิ้วค่ะ" },
+  ],
+  2: [
+    { dir: "INBOUND", text: "ขอใบเสนอราคา Chiller parts ตามไฟล์แนบครับ" },
+    { dir: "OUTBOUND", text: "ได้รับแล้วครับ จะส่งใบเสนอราคาให้ภายในวันนี้ครับ" },
+  ],
+  3: [
+    { dir: "INBOUND", text: "แต้มสะสมผมเหลือเท่าไหร่ครับ" },
+    { dir: "OUTBOUND", text: "คงเหลือ 640 แต้มครับคุณธนากร" },
+  ],
+  5: [{ dir: "INBOUND", text: "ร้านเปิดวันเสาร์ไหมครับ" }],
+};
+
+async function main() {
+  if (process.env.SEED_DEMO !== "true") {
+    console.log("seed: ข้าม (ตั้ง SEED_DEMO=true เพื่อใส่ข้อมูลตัวอย่าง)");
+    return;
+  }
+
+  const tagIds = new Map<string, string>();
+  for (const t of TAGS) {
+    const tag = await prisma.tag.upsert({ where: { name: t.name }, update: {}, create: t });
+    tagIds.set(t.name, tag.id);
+  }
+
+  for (const [i, c] of CUSTOMERS.entries()) {
+    const existing = await prisma.customer.findUnique({ where: { lineUserId: c.lineUserId } });
+    if (existing) continue;
+
+    const convo = CONVERSATIONS[i] ?? [];
+    const now = Date.now();
+    const base = now - (i + 1) * 3_600_000;
+
+    await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.create({
+        data: {
+          lineUserId: c.lineUserId,
+          lineName: c.lineName,
+          fullName: c.fullName,
+          phone: c.phone,
+          company: c.company,
+          followStatus: "FOLLOWING",
+          followedAt: new Date(now - (i + 2) * 86_400_000 * 7),
+          tags: { create: c.tags.map((name) => ({ tagId: tagIds.get(name)! })) },
+        },
+      });
+
+      for (const [j, m] of convo.entries()) {
+        await tx.chatMessage.create({
+          data: {
+            customerId: customer.id,
+            direction: m.dir,
+            type: "TEXT",
+            text: m.text,
+            sentAt: new Date(base + j * 120_000),
+          },
+        });
+      }
+
+      const last = convo.at(-1);
+      if (c.points > 0) {
+        await tx.pointTransaction.create({
+          data: {
+            customerId: customer.id,
+            type: "EARN",
+            amount: c.points,
+            balanceAfter: c.points,
+            reason: "ยอดยกมา (ข้อมูลตัวอย่าง)",
+          },
+        });
+      }
+
+      await tx.customer.update({
+        where: { id: customer.id },
+        data: {
+          pointBalance: c.points,
+          lastMessageAt: last ? new Date(base + (convo.length - 1) * 120_000) : null,
+          lastMessagePreview: last?.text ?? null,
+          unreadCount: last?.dir === "INBOUND" ? 1 : 0,
+        },
+      });
+
+      if (i === 0) {
+        await tx.adminNote.create({
+          data: { customerId: customer.id, body: "ลูกค้าประจำ ชอบให้ส่งของรอบเช้า", isPinned: true },
+        });
+      }
+    });
+  }
+
+  const count = await prisma.customer.count();
+  console.log(`seed: เสร็จแล้ว — ลูกค้าในระบบ ${count} ราย`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

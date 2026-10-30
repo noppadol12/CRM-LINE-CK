@@ -7,7 +7,7 @@ Next.js (App Router) + Tailwind CSS + shadcn/ui + Prisma + Supabase Postgres, de
 | เฟส | งาน | สถานะ |
 |---|---|---|
 | 0 | Setup โปรเจกต์ + GitHub + Vercel | ✅ |
-| 1 | Prisma schema + migrate + seed | ⏳ |
+| 1 | Prisma schema + สร้างตารางอัตโนมัติ + seed | ✅ |
 | 2 | ระบบล็อกอิน (Auth.js) + Layout sidebar | ⏳ |
 | 3 | Customers CRUD + แท็ก | ⏳ |
 | 4 | LINE Webhook | ⏳ |
@@ -15,6 +15,14 @@ Next.js (App Router) + Tailwind CSS + shadcn/ui + Prisma + Supabase Postgres, de
 | 6 | ระบบแต้ม (ledger) | ⏳ |
 | 7 | Dashboard KPI + กราฟ | ⏳ |
 | 8 | Hardening | ⏳ |
+
+## ฐานข้อมูล
+
+- Schema: `prisma/schema.prisma` (Prisma 7 + `@prisma/adapter-pg`)
+- ทุกครั้งที่ Vercel build จะรัน `prisma db push` เพื่อสร้าง/อัปเดตตารางให้ตรงกับ schema อัตโนมัติ
+  ถ้าการเปลี่ยนแปลงจะทำให้ข้อมูลหาย build จะหยุดเองเพื่อป้องกัน
+- ตั้ง `SEED_DEMO=true` เพื่อใส่ข้อมูลตัวอย่าง (รันซ้ำได้ ไม่สร้างซ้ำ)
+- เช็คการเชื่อมต่อ: เปิด `/api/health`
 
 ## Environment Variables
 
