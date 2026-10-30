@@ -19,8 +19,12 @@ export function formatPhone(phone?: string | null): string {
   return phone;
 }
 
-export function displayName(c: { fullName?: string | null; lineName?: string | null }): string {
-  return c.fullName?.trim() || c.lineName?.trim() || "ไม่ระบุชื่อ";
+export function displayName(c: { fullName?: string | null; lineName?: string | null; lineUserId?: string | null }): string {
+  return (
+    c.fullName?.trim() ||
+    c.lineName?.trim() ||
+    (c.lineUserId ? `ผู้ใช้ LINE ···${c.lineUserId.slice(-4)}` : "ไม่ระบุชื่อ")
+  );
 }
 
 const dateTimeTH = new Intl.DateTimeFormat("th-TH", {

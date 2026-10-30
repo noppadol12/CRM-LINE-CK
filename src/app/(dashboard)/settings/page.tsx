@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser, ROLE_LABEL } from "@/lib/auth";
 import { listTags } from "@/lib/customers";
 import { canManage } from "@/lib/permissions";
+import { LineConnection } from "./line-connection";
 import { PasswordForm } from "./password-form";
 import { TagsManager } from "./tags-manager";
 
@@ -14,15 +15,18 @@ export const metadata: Metadata = { title: "ตั้งค่า · CK CRM" };
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="ตั้งค่า" description="จัดการแท็กลูกค้าและบัญชีของคุณ" />
+      <PageHeader title="ตั้งค่า" description="แท็กลูกค้า การเชื่อมต่อ LINE OA และบัญชีของคุณ" />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
             <TagsSection />
           </Suspense>
         </div>
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
+            <LineConnection />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <AccountSection />
           </Suspense>
         </div>

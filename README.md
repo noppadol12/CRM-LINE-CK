@@ -10,7 +10,7 @@ Next.js (App Router) + Tailwind CSS + shadcn/ui + Prisma + Supabase Postgres, de
 | 1 | Prisma schema + สร้างตารางอัตโนมัติ + seed | ✅ |
 | 2 | ระบบล็อกอิน + Layout sidebar + แดชบอร์ดเบื้องต้น | ✅ |
 | 3 | จัดการลูกค้า (ตาราง ค้นหา เพิ่ม/แก้/ลบ) + แท็ก + โน้ต + เปลี่ยนรหัสผ่าน | ✅ |
-| 4 | LINE Webhook | ⏳ |
+| 4 | LINE Webhook (ข้อความ / เพิ่มเพื่อน / บล็อก) + หน้าสถานะการเชื่อมต่อ | ✅ |
 | 5 | หน้าแชท + โน้ตภายใน + ตอบกลับ | ⏳ |
 | 6 | ระบบแต้ม (ledger) | ⏳ |
 | 7 | Dashboard KPI + กราฟ | ⏳ |
@@ -30,6 +30,14 @@ Next.js (App Router) + Tailwind CSS + shadcn/ui + Prisma + Supabase Postgres, de
 - `src/proxy.ts` กันหน้าที่ต้องล็อกอิน (ด่านแรก) และ `getCurrentUser()` ใน `src/lib/auth.ts` ตรวจสิทธิ์จริงทุกครั้งที่อ่านข้อมูล
 - บัญชีแรก: ตั้ง `ADMIN_EMAIL` + `ADMIN_PASSWORD` แล้ว deploy ระบบจะสร้างบัญชีเจ้าของให้
 - ลืมรหัสผ่าน: ตั้ง `ADMIN_RESET_PASSWORD=true` พร้อม `ADMIN_PASSWORD` ใหม่ → redeploy → ลบตัวแปรออก
+
+## LINE Webhook
+
+- Endpoint: `POST /api/line/webhook` ตรวจลายเซ็นด้วย `LINE_CHANNEL_SECRET`
+- event ทุกตัวบันทึกลง `webhook_events` ก่อน (กันประมวลผลซ้ำเมื่อ LINE ส่งซ้ำ) แล้วตอบ 200 ทันที ประมวลผลต่อด้วย `after()`
+- รองรับ: follow, unfollow, message (ข้อความ รูป วิดีโอ เสียง ไฟล์ สติกเกอร์ ตำแหน่ง) เฉพาะแชท 1:1
+- ดึงชื่อและรูปโปรไฟล์จาก LINE อัตโนมัติ (อัปเดตวันละครั้ง)
+- ตั้งค่า: หน้า **ตั้งค่า → การเชื่อมต่อ LINE OA** กด "ตั้ง Webhook URL ให้อัตโนมัติ"
 
 ## Environment Variables
 

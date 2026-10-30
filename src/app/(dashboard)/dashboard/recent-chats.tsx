@@ -19,6 +19,7 @@ export async function RecentChats() {
     select: {
       id: true,
       lineName: true,
+      lineUserId: true,
       fullName: true,
       pictureUrl: true,
       lastMessageAt: true,

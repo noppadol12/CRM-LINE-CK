@@ -47,11 +47,12 @@ enum FollowStatus {
 }
 
 model Customer {
-  id            String  @id @default(cuid())
-  lineUserId    String? @unique // LINE UID (U + 32 hex) — null ได้ถ้าเพิ่มลูกค้าเอง
-  lineName      String? // displayName จากโปรไฟล์ LINE
-  pictureUrl    String?
-  statusMessage String?
+  id              String    @id @default(cuid())
+  lineUserId      String?   @unique // LINE UID (U + 32 hex) — null ได้ถ้าเพิ่มลูกค้าเอง
+  lineName        String? // displayName จากโปรไฟล์ LINE
+  pictureUrl      String?
+  statusMessage   String?
+  profileSyncedAt DateTime? // ดึงชื่อ/รูปจาก LINE ล่าสุดเมื่อไหร่
 
   fullName String? // ชื่อจริงที่แอดมินกรอก
   phone    String?

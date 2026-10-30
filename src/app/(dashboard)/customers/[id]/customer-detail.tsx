@@ -22,7 +22,7 @@ import { getCustomer, listTags } from "@/lib/customers";
 import { displayName, formatDate, formatDateTime, formatPhone, timeAgo } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
 import { cn, initials, thNumber } from "@/lib/utils";
-import { CopyButton } from "./copy-button";
+import { CopyButton } from "@/components/copy-button";
 import { CustomerActions, RestoreBanner } from "./customer-actions";
 import { NotesPanel } from "./notes-panel";
 import { TagEditor } from "./tag-editor";
