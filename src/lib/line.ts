@@ -5,7 +5,11 @@ import { messagingApi } from "@line/bot-sdk";
 export function getLineClient(): messagingApi.MessagingApiClient | null {
   const token = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim();
   if (!token) return null;
-  return new messagingApi.MessagingApiClient({ channelAccessToken: token });
+  // LINE_API_BASE ใช้สำหรับทดสอบกับเซิร์ฟเวอร์จำลองเท่านั้น
+  return new messagingApi.MessagingApiClient({
+    channelAccessToken: token,
+    ...(process.env.LINE_API_BASE ? { baseURL: process.env.LINE_API_BASE } : {}),
+  });
 }
 
 export function getChannelSecret(): string | null {

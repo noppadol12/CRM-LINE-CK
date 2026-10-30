@@ -24,8 +24,8 @@ import { canManage } from "@/lib/permissions";
 import { cn, initials, thNumber } from "@/lib/utils";
 import { CopyButton } from "@/components/copy-button";
 import { CustomerActions, RestoreBanner } from "./customer-actions";
-import { NotesPanel } from "./notes-panel";
-import { TagEditor } from "./tag-editor";
+import { NotesPanel } from "@/components/customers/notes-panel";
+import { TagEditor } from "@/components/customers/tag-editor";
 
 const POINT_TYPE: Record<string, string> = { EARN: "ได้รับ", REDEEM: "แลก", ADJUST: "ปรับยอด", EXPIRE: "หมดอายุ" };
 
