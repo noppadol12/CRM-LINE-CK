@@ -1,16 +1,13 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { getPooledUrl, missingDbUrlMessage } from "./db-url";
 
 /**
  * แอปรันบน serverless → ใช้ "pooled connection" (Supabase pooler)
- * รองรับทั้งชื่อตัวแปรจาก Vercel × Supabase integration และแบบตั้งเอง
  */
 function resolveConnectionString(): string {
-  const raw =
-    process.env.DATABASE_URL ??
-    process.env.POSTGRES_PRISMA_URL ??
-    process.env.POSTGRES_URL;
-  if (!raw) throw new Error("Missing DATABASE_URL / POSTGRES_PRISMA_URL");
+  const raw = getPooledUrl();
+  if (!raw) throw new Error(missingDbUrlMessage());
 
   // ตัด query params ที่ node-postgres ไม่ใช้ / ทำให้ SSL ของ Supabase ตรวจ cert ไม่ผ่าน
   const url = new URL(raw);

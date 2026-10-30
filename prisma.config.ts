@@ -1,15 +1,14 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { getDirectUrl, missingDbUrlMessage } from "./src/lib/db-url";
 
-/**
- * Prisma CLI (db push / migrate) ต้องใช้ "direct connection" ที่ไม่ผ่าน pooler
- * รองรับทั้งชื่อตัวแปรจาก Vercel × Supabase integration และแบบตั้งเอง
- */
-const directUrl =
-  process.env.DIRECT_URL ??
-  process.env.POSTGRES_URL_NON_POOLING ??
-  process.env.DATABASE_URL ??
-  process.env.POSTGRES_PRISMA_URL;
+const directUrl = getDirectUrl();
+
+// db push / migrate ต้องมี URL — แจ้ง error ที่อ่านเข้าใจแทน error กลางๆ ของ Prisma
+const needsDb = process.argv.some((a) => ["push", "migrate", "pull", "seed"].includes(a));
+if (needsDb && !directUrl) {
+  throw new Error(missingDbUrlMessage());
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
