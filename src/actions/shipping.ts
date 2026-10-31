@@ -164,6 +164,7 @@ const ShipmentSchema = z.object({
   note: opt(1000),
   notify: z.boolean().default(false),
   message: opt(5000),
+  followUpDays: z.number().int().min(1).max(60).nullish(),
 });
 export type ShipmentInput = z.input<typeof ShipmentSchema>;
 
@@ -171,12 +172,30 @@ export async function saveShipment(id: string | null, input: ShipmentInput): Pro
   const user = await getCurrentUser();
   const parsed = ShipmentSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
-  const { notify, message, ...data } = parsed.data;
+  const { notify, message, followUpDays, ...data } = parsed.data;
   if (notify && !message) return { ok: false, error: "พิมพ์ข้อความที่จะส่งให้ลูกค้า" };
 
   const saved = id
     ? await prisma.shipment.update({ where: { id }, data, select: { id: true } })
     : await prisma.shipment.create({ data: { ...data, createdById: user.id }, select: { id: true } });
+
+  // งานติดตาม: ถามลูกค้าว่าได้รับของหรือยัง (10:00 น. เวลาไทย หลังวันส่ง n วัน)
+  if (!id && followUpDays) {
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(data.shippedAt);
+    const dueAt = new Date(new Date(`${day}T10:00:00+07:00`).getTime() + followUpDays * 86_400_000);
+    const carrier = data.carrierId ? await prisma.carrier.findUnique({ where: { id: data.carrierId }, select: { name: true } }) : null;
+    await prisma.task.create({
+      data: {
+        title: "ถามลูกค้าว่าได้รับของแล้วหรือยัง",
+        note: [carrier?.name, data.trackingNo && `เลขพัสดุ ${data.trackingNo}`].filter(Boolean).join(" · ") || null,
+        dueAt,
+        customerId: data.customerId,
+        dealId: data.dealId,
+        assigneeId: user.id,
+        createdById: user.id,
+      },
+    });
+  }
 
   // จำขนส่งที่ใช้ไว้เป็นขนส่งหลักของลูกค้า ถ้ายังไม่เคยตั้ง
   if (data.carrierId) {

@@ -4,6 +4,7 @@ import { processLineEvent } from "@/lib/line-events";
 import { savePendingMedia } from "@/lib/media";
 import { prisma } from "@/lib/prisma";
 import { getSetting, setSetting } from "@/lib/settings";
+import { maybeProcessReminders, processDueReminders } from "@/lib/tasks";
 
 const MAX_EVENT_ATTEMPTS = 5;
 
@@ -54,6 +55,7 @@ export async function retryFailedEvents({ deadline, minAgeMs = 2 * 60_000 }: { d
 /** งานดูแลระบบ: event ค้าง → ไฟล์ค้าง → ล้างข้อมูลเก่า */
 export async function runMaintenance({ budgetMs }: { budgetMs: number }) {
   const deadline = Date.now() + budgetMs;
+  const reminders = await processDueReminders().catch(() => 0);
   const events = await retryFailedEvents({ deadline });
   const media = await savePendingMedia({ deadline });
   const [attempts, oldEvents] = await Promise.all([
@@ -62,7 +64,7 @@ export async function runMaintenance({ budgetMs }: { budgetMs: number }) {
       where: { processedAt: { not: null }, receivedAt: { lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } },
     }),
   ]);
-  return { events, media, cleaned: { loginAttempts: attempts.count, webhookEvents: oldEvents.count } };
+  return { reminders, events, media, cleaned: { loginAttempts: attempts.count, webhookEvents: oldEvents.count } };
 }
 
 const THROTTLE_KEY = "maintenance";
@@ -71,6 +73,7 @@ const THROTTLE_MS = 15 * 60_000;
 /** เรียกจาก webhook: รันงานดูแลระบบไม่เกินทุก 15 นาที (ไม่ต้องตั้ง cron เพิ่ม) */
 export async function maybeRunMaintenance() {
   try {
+    await maybeProcessReminders();
     const last = await getSetting<{ lastRunAt: string }>(THROTTLE_KEY);
     if (last && Date.now() - new Date(last.lastRunAt).getTime() < THROTTLE_MS) return;
     await setSetting(THROTTLE_KEY, { lastRunAt: new Date().toISOString() });

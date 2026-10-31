@@ -22,14 +22,21 @@ import { listCustomerDeals, listOwners } from "@/lib/deals";
 import { baht, isClosedStage } from "@/lib/deal-stages";
 import { WithStages } from "@/components/deals/with-stages";
 import { CustomerDeals } from "@/components/deals/customer-deals";
-import { displayName, formatDate, formatDateTime, formatPhone, timeAgo } from "@/lib/format";
+import { displayName, formatDate, formatPhone, timeAgo } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
-import { cn, initials, thNumber } from "@/lib/utils";
+import { initials, thNumber } from "@/lib/utils";
 import { CopyButton } from "@/components/copy-button";
 import { CustomerActions, RestoreBanner } from "./customer-actions";
 import { NotesPanel } from "@/components/customers/notes-panel";
 import { TagEditor } from "@/components/customers/tag-editor";
 import { ShippingCard } from "@/components/shipping/shipping-card";
+import { Timeline } from "@/components/customers/timeline";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+import { TaskList } from "@/components/tasks/task-list";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { customerTimeline } from "@/lib/timeline";
+import { listTasks, toTaskDTO } from "@/lib/tasks";
 import { customerShipments, toShipmentDTO } from "@/lib/shipping";
 
 
@@ -43,11 +50,11 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
     listOwners(),
     customerShipments(id, 8),
   ]);
+  const [timeline, tasks] = await Promise.all([customerTimeline(id), listTasks({ customerId: id })]);
   if (!c) notFound();
 
   const name = displayName(c);
   const manager = canManage(user);
-  const recentMessages = [...c.messages].reverse();
 
   return (
     <>
@@ -197,6 +204,23 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
               </WithStages>
             </CardContent>
           </Card>
+          <Card className="gap-0 pb-0">
+            <CardHeader className="flex-row items-center justify-between border-b pb-3">
+              <CardTitle className="text-base">งานติดตาม</CardTitle>
+              <TaskDialog
+                customer={{ id: c.id, name }}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Plus /> เพิ่มงาน
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent className="px-0">
+              <TaskList tasks={tasks.open.map(toTaskDTO)} showCustomer={false} empty="ไม่มีงานค้าง — เช่น นัดโทรกลับ หรือถามผลหลังส่งของ" />
+            </CardContent>
+          </Card>
+
           <NotesPanel
             customerId={c.id}
             currentUserId={user.id}
@@ -211,35 +235,17 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
             }))}
           />
 
-          <Card className="gap-0 pb-0">
-            <CardHeader className="flex-row items-center justify-between border-b pb-4">
-              <CardTitle className="text-base">แชทล่าสุด</CardTitle>
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-base">ไทม์ไลน์</CardTitle>
               {c.lineUserId && (
                 <Link href={`/chats?c=${c.id}`} className="text-sm font-medium text-primary hover:underline">
                   เปิดห้องแชท
                 </Link>
               )}
             </CardHeader>
-            <CardContent className="space-y-2.5 bg-muted/40 p-5">
-              {recentMessages.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">ยังไม่มีข้อความ</p>
-              ) : (
-                recentMessages.map((m) => (
-                  <div key={m.id} className={cn("flex", m.direction === "OUTBOUND" ? "justify-end" : "justify-start")}>
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
-                        m.direction === "OUTBOUND" ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border bg-card",
-                      )}
-                    >
-                      <p className="whitespace-pre-wrap">{m.text ?? `[${m.type.toLowerCase()}]`}</p>
-                      <p className={cn("mt-1 text-[11px]", m.direction === "OUTBOUND" ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                        {formatDateTime(m.sentAt)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
+            <CardContent>
+              <Timeline items={timeline} />
             </CardContent>
           </Card>
 

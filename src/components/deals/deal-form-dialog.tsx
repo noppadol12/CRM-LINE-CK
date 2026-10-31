@@ -23,7 +23,7 @@ import type { DealDTO } from "@/lib/deals";
 import { cn } from "@/lib/utils";
 
 export type Owner = { id: string; name: string };
-type CustomerOption = { id: string; name: string; company?: string | null };
+export type CustomerOption = { id: string; name: string; company?: string | null };
 
 const selectCls =
   "h-9 w-full rounded-md border border-input bg-card px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30";
@@ -39,7 +39,7 @@ function Field({ label, error, children, className }: { label: string; error?: s
 }
 
 /** ช่องเลือกลูกค้าแบบค้นหา */
-function CustomerPicker({ value, onChange, error }: { value: CustomerOption | null; onChange: (c: CustomerOption | null) => void; error?: string }) {
+export function CustomerPicker({ value, onChange, error }: { value: CustomerOption | null; onChange: (c: CustomerOption | null) => void; error?: string }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<CustomerOption[]>([]);
   const [loading, setLoading] = useState(false);

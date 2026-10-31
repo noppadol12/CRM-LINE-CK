@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { PasswordNotice } from "@/components/layout/password-notice";
+import { ReminderHeartbeat } from "@/components/tasks/reminder-heartbeat";
 import { Suspense } from "react";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
@@ -15,6 +16,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
           </Suspense>
           {children}
         </main>
+        <ReminderHeartbeat />
       </div>
     </div>
   );

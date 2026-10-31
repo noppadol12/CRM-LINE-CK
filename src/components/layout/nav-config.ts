@@ -1,4 +1,4 @@
-import { BarChart3, Handshake, LayoutDashboard, MessagesSquare, Settings, Truck, Users, type LucideIcon } from "lucide-react";
+import { BarChart3, Handshake, LayoutDashboard, ListChecks, MessagesSquare, Settings, Truck, Users, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -6,12 +6,15 @@ export type NavItem = {
   icon: LucideIcon;
   /** แสดง badge จำนวนแชทรอตอบ */
   showUnread?: boolean;
+  /** แสดง badge จำนวนงานที่ถึงกำหนด */
+  showTasks?: boolean;
 };
 
 export const NAV_MAIN: NavItem[] = [
   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
   { href: "/customers", label: "ลูกค้า", icon: Users },
   { href: "/chats", label: "แชท", icon: MessagesSquare, showUnread: true },
+  { href: "/tasks", label: "งานติดตาม", icon: ListChecks, showTasks: true },
   { href: "/deals", label: "ดีล / ใบเสนอราคา", icon: Handshake },
   { href: "/shipping", label: "ขนส่ง", icon: Truck },
   { href: "/reports", label: "รายงาน", icon: BarChart3 },

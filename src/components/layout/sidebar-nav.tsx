@@ -6,17 +6,19 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_FOOTER, NAV_MAIN, type NavItem } from "./nav-config";
 
-type Props = { unreadBadge?: ReactNode; onNavigate?: () => void };
+type Props = { unreadBadge?: ReactNode; tasksBadge?: ReactNode; onNavigate?: () => void };
 
 function NavLink({
   item,
   active,
   badge,
+  tasksBadge,
   onNavigate,
 }: {
   item: NavItem;
   active: boolean;
   badge?: ReactNode;
+  tasksBadge?: ReactNode;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
@@ -33,18 +35,19 @@ function NavLink({
       <Icon className={cn("size-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
       <span className="flex-1">{item.label}</span>
       {item.showUnread && badge}
+      {item.showTasks && tasksBadge}
     </Link>
   );
 }
 
-function NavList({ pathname, unreadBadge, onNavigate }: Props & { pathname: string | null }) {
+function NavList({ pathname, unreadBadge, tasksBadge, onNavigate }: Props & { pathname: string | null }) {
   const isActive = (href: string) => !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
   return (
     <nav className="flex flex-1 flex-col gap-6 px-3">
       <div className="space-y-1">
         <p className="px-3 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">เมนูหลัก</p>
         {NAV_MAIN.map((item) => (
-          <NavLink key={item.href} item={item} active={isActive(item.href)} badge={unreadBadge} onNavigate={onNavigate} />
+          <NavLink key={item.href} item={item} active={isActive(item.href)} badge={unreadBadge} tasksBadge={tasksBadge} onNavigate={onNavigate} />
         ))}
       </div>
       <div className="mt-auto space-y-1">

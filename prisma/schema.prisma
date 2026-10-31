@@ -41,6 +41,8 @@ model AdminUser {
   dealEvents        DealEvent[]
   pushSubscriptions PushSubscription[]
   shipments         Shipment[]
+  tasksAssigned     Task[]             @relation("TaskAssignee")
+  tasksCreated      Task[]             @relation("TaskCreator")
 
   @@map("admin_users")
 }
@@ -101,6 +103,7 @@ model Customer {
   notes     AdminNote[]
   deals     Deal[]
   shipments Shipment[]
+  tasks     Task[]
 
   @@index([phone])
   @@index([province])
@@ -250,6 +253,7 @@ model Deal {
   stageDef  DealStageDef @relation(fields: [stage], references: [id], onDelete: Restrict)
   events    DealEvent[]
   shipments Shipment[]
+  tasks     Task[]
 
   @@index([stage, updatedAt])
   @@index([customerId])
@@ -418,4 +422,31 @@ model Shipment {
   @@index([carrierId, shippedAt])
   @@index([shippedAt])
   @@map("shipments")
+}
+
+// ---------- งานติดตาม / เตือนความจำ ----------
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  note        String?
+  dueAt       DateTime // เวลาที่ต้องทำ (เตือนตอนถึงเวลา)
+  customerId  String?
+  dealId      String?
+  assigneeId  String?
+  createdById String?
+  doneAt      DateTime?
+  remindedAt  DateTime? // ส่งแจ้งเตือนแล้ว (กันเตือนซ้ำ)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  customer  Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deal      Deal?      @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  assignee  AdminUser? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy AdminUser? @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId, doneAt, dueAt])
+  @@index([doneAt, dueAt])
+  @@index([customerId])
+  @@map("tasks")
 }

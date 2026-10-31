@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BrandMark } from "./brand";
 import { SidebarNav } from "./sidebar-nav";
-import { UnreadBadge } from "./unread-badge";
+import { TasksBadge, UnreadBadge } from "./unread-badge";
 import { UserMenu } from "./user-menu";
 
 export function UserMenuSkeleton() {
@@ -28,6 +28,11 @@ export function Sidebar() {
           unreadBadge={
             <Suspense>
               <UnreadBadge />
+            </Suspense>
+          }
+          tasksBadge={
+            <Suspense>
+              <TasksBadge />
             </Suspense>
           }
         />

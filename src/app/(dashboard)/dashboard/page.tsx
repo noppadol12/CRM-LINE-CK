@@ -5,6 +5,7 @@ import { KpiCards, KpiCardsSkeleton } from "./kpi-cards";
 import { RecentChats, RecentChatsSkeleton } from "./recent-chats";
 import { Greeting } from "./greeting";
 import { FollowUps, FollowUpsSkeleton } from "./follow-ups";
+import { TasksToday } from "./tasks-today";
 
 export const metadata: Metadata = { title: "แดชบอร์ด · CK CRM" };
 
@@ -26,9 +27,14 @@ export default function DashboardPage() {
             <RecentChats />
           </Suspense>
         </div>
-        <Suspense fallback={<FollowUpsSkeleton />}>
-          <FollowUps />
-        </Suspense>
+        <div className="space-y-6">
+          <Suspense fallback={<FollowUpsSkeleton />}>
+            <TasksToday />
+          </Suspense>
+          <Suspense fallback={<FollowUpsSkeleton />}>
+            <FollowUps />
+          </Suspense>
+        </div>
       </div>
     </>
   );

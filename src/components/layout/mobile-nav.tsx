@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { BrandMark } from "./brand";
 import { SidebarNav } from "./sidebar-nav";
 
-export function MobileNav({ unreadBadge }: { unreadBadge?: ReactNode }) {
+export function MobileNav({ unreadBadge, tasksBadge }: { unreadBadge?: ReactNode; tasksBadge?: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -22,7 +22,7 @@ export function MobileNav({ unreadBadge }: { unreadBadge?: ReactNode }) {
           <BrandMark />
         </div>
         <div className="flex flex-1 flex-col pt-4 pb-6">
-          <SidebarNav unreadBadge={unreadBadge} onNavigate={() => setOpen(false)} />
+          <SidebarNav unreadBadge={unreadBadge} tasksBadge={tasksBadge} onNavigate={() => setOpen(false)} />
         </div>
       </SheetContent>
     </Sheet>

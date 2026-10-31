@@ -11,6 +11,10 @@ import { initials } from "@/lib/utils";
 import { CustomerDeals } from "@/components/deals/customer-deals";
 import { WithStages } from "@/components/deals/with-stages";
 import { ShippingCard, type ShipmentSummary } from "@/components/shipping/shipping-card";
+import { TaskDialog } from "@/components/tasks/task-dialog";
+import { TaskList, type TaskItem } from "@/components/tasks/task-list";
+import { ListChecks, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Owner } from "@/components/deals/deal-form-dialog";
 import type { DealDTO } from "@/lib/deals";
 
@@ -22,9 +26,11 @@ export function CustomerPanel({
   currentUserId,
   canManage,
   shipments,
+  tasks,
 }: {
   thread: Thread;
   shipments: ShipmentSummary[];
+  tasks: TaskItem[];
   deals: DealDTO[];
   owners: Owner[];
   tags: TagWithCount[];
@@ -73,6 +79,27 @@ export function CustomerPanel({
           </div>
         )}
       </dl>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <ListChecks className="size-3.5" /> งานติดตาม
+          </p>
+          <TaskDialog
+            customer={{ id: c.id, name }}
+            trigger={
+              <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                <Plus /> งาน
+              </Button>
+            }
+          />
+        </div>
+        {tasks.length > 0 && (
+          <div className="rounded-lg border bg-card">
+            <TaskList tasks={tasks} showCustomer={false} />
+          </div>
+        )}
+      </div>
 
       <ShippingCard
         compact

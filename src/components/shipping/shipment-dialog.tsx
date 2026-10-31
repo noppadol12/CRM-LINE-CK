@@ -49,6 +49,8 @@ function Form({ data, dealId, shipment, onDone }: { data: FormData; dealId?: str
   const canNotify = Boolean(c.lineUserId) && c.followStatus !== "UNFOLLOWED";
   const [notify, setNotify] = useState(canNotify && !shipment);
   const [edited, setEdited] = useState<string | null>(null);
+  const [followUp, setFollowUp] = useState(!shipment);
+  const [followDays, setFollowDays] = useState("3");
   const [pending, start] = useTransition();
 
   const carrier = data.carriers.find((x) => x.id === carrierId);
@@ -83,6 +85,7 @@ function Form({ data, dealId, shipment, onDone }: { data: FormData; dealId?: str
             note,
             notify,
             message: notify ? message : null,
+            followUpDays: !shipment && followUp ? Math.max(1, Math.min(60, Number(followDays) || 3)) : null,
           });
           if (r.ok) {
             toast.success(r.message);
@@ -142,6 +145,24 @@ function Form({ data, dealId, shipment, onDone }: { data: FormData; dealId?: str
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">ลูกค้ารายนี้ไม่มี LINE หรือบล็อก OA — บันทึกได้แต่ส่งข้อความไม่ได้</p>
+      )}
+
+      {!shipment && (
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          <input type="checkbox" checked={followUp} onChange={(e) => setFollowUp(e.target.checked)} className="size-4 accent-primary" />
+          เตือนให้ถามลูกค้าว่าได้รับของหลังส่ง
+          <Input
+            type="number"
+            min={1}
+            max={60}
+            value={followDays}
+            onChange={(e) => setFollowDays(e.target.value)}
+            disabled={!followUp}
+            className="h-8 w-16"
+            aria-label="จำนวนวัน"
+          />
+          วัน
+        </label>
       )}
 
       <DialogFooter>
