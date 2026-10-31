@@ -2,13 +2,15 @@
 
 import { startTransition, useEffect, useOptimistic, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { Plus, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { moveDealStage } from "@/actions/deals";
 import { DealCard, LostReasonDialog } from "@/components/deals/deal-card";
 import { DealFormDialog, type Owner } from "@/components/deals/deal-form-dialog";
 import { Button } from "@/components/ui/button";
-import { DEAL_STAGES, OPEN_STAGES, baht, type DealStageKey } from "@/lib/deal-stages";
+import { LOST, baht, isClosedStage, stageStyle } from "@/lib/deal-stages";
+import { useStages } from "@/components/deals/stages-context";
 import type { DealDTO } from "@/lib/deals";
 import { cn, thNumber } from "@/lib/utils";
 
@@ -18,10 +20,11 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
   const params = useSearchParams();
   const [q, setQ] = useState(params.get("q") ?? "");
   const owner = params.get("owner") ?? "";
-  const [dragOver, setDragOver] = useState<DealStageKey | null>(null);
+  const stages = useStages();
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const [pendingLost, setPendingLost] = useState<string | null>(null);
 
-  const [board, moveOptimistic] = useOptimistic(deals, (state, { id, stage }: { id: string; stage: DealStageKey }) =>
+  const [board, moveOptimistic] = useOptimistic(deals, (state, { id, stage }: { id: string; stage: string }) =>
     state.map((d) => (d.id === id ? { ...d, stage } : d)),
   );
 
@@ -40,8 +43,8 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  function move(id: string, stage: DealStageKey, lostReason?: string) {
-    if (stage === "LOST" && !lostReason) {
+  function move(id: string, stage: string, lostReason?: string) {
+    if (stage === LOST && !lostReason) {
       setPendingLost(id);
       return;
     }
@@ -52,8 +55,9 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
     });
   }
 
-  const openTotal = board.filter((d) => OPEN_STAGES.includes(d.stage)).reduce((s, d) => s + (d.amount ?? 0), 0);
-  const openCount = board.filter((d) => OPEN_STAGES.includes(d.stage)).length;
+  const openDeals = board.filter((d) => !isClosedStage(d.stage));
+  const openTotal = openDeals.reduce((s, d) => s + (d.amount ?? 0), 0);
+  const openCount = openDeals.length;
 
   return (
     <div className="space-y-4">
@@ -64,15 +68,25 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
             เปิดอยู่ {thNumber.format(openCount)} ดีล · มูลค่ารวม {baht.format(openTotal)} · ลากการ์ดเพื่อเปลี่ยนขั้น
           </p>
         </div>
-        <DealFormDialog
-          owners={owners}
-          trigger={
-            <Button>
-              <Plus />
-              สร้างดีล
+        <div className="flex gap-2">
+          {canManage && (
+            <Button variant="outline" asChild>
+              <Link href="/settings#stages">
+                <Settings2 />
+                จัดการขั้นตอน
+              </Link>
             </Button>
-          }
-        />
+          )}
+          <DealFormDialog
+            owners={owners}
+            trigger={
+              <Button>
+                <Plus />
+                สร้างดีล
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -103,38 +117,38 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
       </div>
 
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        {DEAL_STAGES.map((stage) => {
-          const items = board.filter((d) => d.stage === stage.key);
+        {stages.map((stage) => {
+          const items = board.filter((d) => d.stage === stage.id);
           const total = items.reduce((s, d) => s + (d.amount ?? 0), 0);
           return (
             <section
-              key={stage.key}
+              key={stage.id}
               onDragOver={(e) => {
                 e.preventDefault();
-                setDragOver(stage.key);
+                setDragOver(stage.id);
               }}
-              onDragLeave={() => setDragOver((s) => (s === stage.key ? null : s))}
+              onDragLeave={() => setDragOver((s) => (s === stage.id ? null : s))}
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOver(null);
                 const id = e.dataTransfer.getData("text/deal-id");
                 const deal = board.find((d) => d.id === id);
-                if (deal && deal.stage !== stage.key) move(id, stage.key);
+                if (deal && deal.stage !== stage.id) move(id, stage.id);
               }}
               className={cn(
                 "flex w-72 shrink-0 snap-start flex-col rounded-xl border bg-muted/40 transition-colors",
-                dragOver === stage.key && "border-primary bg-primary-soft/60",
+                dragOver === stage.id && "border-primary bg-primary-soft/60",
               )}
             >
               <header className="space-y-1 px-3 pt-3 pb-2">
                 <div className="flex items-center gap-2">
-                  <span className={cn("size-2 rounded-full", stage.dot)} />
-                  <h2 className="text-sm font-semibold">{stage.label}</h2>
+                  <span className={cn("size-2 rounded-full", stageStyle(stage.color).dot)} />
+                  <h2 className="text-sm font-semibold">{stage.name}</h2>
                   <span className="rounded-full bg-card px-1.5 text-xs text-muted-foreground">{items.length}</span>
                 </div>
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {total > 0 ? baht.format(total) : "—"}
-                  {(stage.key === "WON" || stage.key === "LOST") && " · 30 วันล่าสุด"}
+                  {isClosedStage(stage.id) && " · 30 วันล่าสุด"}
                 </p>
               </header>
               <div className="flex min-h-24 flex-1 flex-col gap-2 px-2 pb-2">
@@ -154,7 +168,7 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
         open={pendingLost !== null}
         onOpenChange={(o) => !o && setPendingLost(null)}
         onSubmit={async (reason) => {
-          if (pendingLost) move(pendingLost, "LOST", reason);
+          if (pendingLost) move(pendingLost, LOST, reason);
           setPendingLost(null);
         }}
       />

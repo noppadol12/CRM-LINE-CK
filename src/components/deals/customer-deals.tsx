@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DealDTO } from "@/lib/deals";
+import { isClosedStage } from "@/lib/deal-stages";
 import { DealCard } from "./deal-card";
 import { DealFormDialog, type Owner } from "./deal-form-dialog";
 
@@ -20,8 +21,8 @@ export function CustomerDeals({
   canManage: boolean;
   compact?: boolean;
 }) {
-  const open = deals.filter((d) => d.stage !== "WON" && d.stage !== "LOST");
-  const closed = deals.filter((d) => d.stage === "WON" || d.stage === "LOST");
+  const open = deals.filter((d) => !isClosedStage(d.stage));
+  const closed = deals.filter((d) => isClosedStage(d.stage));
   const shown = compact ? [...open, ...closed.slice(0, 2)] : deals;
 
   return (

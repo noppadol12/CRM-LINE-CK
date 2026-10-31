@@ -4,14 +4,15 @@ import { FollowUpBadge } from "@/components/deals/deal-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
-import { baht, stageInfo } from "@/lib/deal-stages";
+import { baht, findStage, stageStyle } from "@/lib/deal-stages";
+import { listStages } from "@/lib/stages";
 import { listDueFollowUps } from "@/lib/deals";
 import { displayName } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export async function FollowUps() {
   await getCurrentUser();
-  const deals = await listDueFollowUps(6);
+  const [deals, stages] = await Promise.all([listDueFollowUps(6), listStages()]);
 
   return (
     <Card className="gap-0 pb-2">
@@ -33,7 +34,7 @@ export async function FollowUps() {
         ) : (
           <ul className="divide-y">
             {deals.map((d) => {
-              const stage = stageInfo(d.stage);
+              const stage = findStage(stages, d.stage);
               return (
                 <li key={d.id}>
                   <Link
@@ -46,7 +47,7 @@ export async function FollowUps() {
                     </div>
                     <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="truncate">{displayName(d.customer)}</span>
-                      <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", stage.chip)}>{stage.short}</span>
+                      <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", stageStyle(stage.color).chip)}>{stage.name}</span>
                       <span className="ml-auto shrink-0">
                         <FollowUpBadge date={d.nextFollowUpAt} />
                       </span>

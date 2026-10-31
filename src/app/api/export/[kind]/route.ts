@@ -2,6 +2,7 @@ import { getApiUser } from "@/lib/auth";
 import { formatPhone } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { listStages } from "@/lib/stages";
 
 export const maxDuration = 60;
 
@@ -29,14 +30,6 @@ function cell(v: unknown): string {
 }
 const row = (values: unknown[]) => values.map(cell).join(",") + "\r\n";
 
-const STAGE: Record<string, string> = {
-  INQUIRY: "สอบถาม",
-  QUOTED: "เสนอราคาแล้ว",
-  AWAITING_PAYMENT: "รอโอนเงิน",
-  SHIPPING: "เตรียม/จัดส่ง",
-  WON: "ปิดการขาย",
-  LOST: "ไม่ซื้อ",
-};
 const FOLLOW: Record<string, string> = { FOLLOWING: "เป็นเพื่อน", UNFOLLOWED: "บล็อก", UNKNOWN: "ไม่ได้ผูก LINE" };
 
 /** ดึงข้อมูลทีละชุดด้วย cursor (ไม่โหลดทั้งตารางเข้าหน่วยความจำ) */
@@ -110,6 +103,7 @@ async function* messagesCsv() {
 }
 
 async function* dealsCsv() {
+  const STAGE = Object.fromEntries((await listStages()).map((s) => [s.id, s.name]));
   yield row(["รหัส", "ชื่อดีล", "ลูกค้า", "สินค้า", "มูลค่า (บาท)", "ขั้น", "เลขใบเสนอราคา", "ผู้ดูแล", "นัดติดตาม", "เหตุผลที่ไม่ซื้อ", "สร้างเมื่อ", "ปิดเมื่อ"]);
   for await (const rows of batches((c) =>
     prisma.deal.findMany({
@@ -125,7 +119,7 @@ async function* dealsCsv() {
           d.customer.fullName || d.customer.lineName,
           d.items,
           d.amount?.toString(),
-          STAGE[d.stage],
+          STAGE[d.stage] ?? d.stage,
           d.quoteNo,
           d.owner?.name,
           dt(d.nextFollowUpAt),

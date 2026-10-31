@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DEAL_STAGES, bangkokDayKey } from "@/lib/deal-stages";
+import { LOST, bangkokDayKey } from "@/lib/deal-stages";
+import { useStages } from "./stages-context";
 import type { DealDTO } from "@/lib/deals";
 import { cn } from "@/lib/utils";
 
@@ -138,7 +139,8 @@ function DealForm({ deal, customer, owners, onDone }: { deal?: DealDTO; customer
   const [picked, setPicked] = useState<CustomerOption | null>(
     deal ? { id: deal.customer.id, name: deal.customer.fullName || deal.customer.lineName || "ลูกค้า" } : (customer ?? null),
   );
-  const [stage, setStage] = useState<string>(deal?.stage ?? "INQUIRY");
+  const stages = useStages();
+  const [stage, setStage] = useState<string>(deal?.stage ?? stages[0]?.id ?? "");
   const fe = state && !state.ok ? state.fieldErrors : undefined;
 
   const handled = useRef<DealFormState>(undefined);
@@ -184,15 +186,15 @@ function DealForm({ deal, customer, owners, onDone }: { deal?: DealDTO; customer
       </Field>
       <Field label="ขั้น">
         <select name="stage" value={stage} onChange={(e) => setStage(e.target.value)} className={selectCls}>
-          {DEAL_STAGES.map((s) => (
-            <option key={s.key} value={s.key}>
-              {s.label}
+          {stages.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
             </option>
           ))}
         </select>
       </Field>
 
-      {stage === "LOST" && (
+      {stage === LOST && (
         <Field label="เหตุผลที่ไม่ซื้อ" error={fe?.lostReason} className="sm:col-span-2">
           <Input name="lostReason" defaultValue={deal?.lostReason ?? ""} placeholder="เช่น ราคาสูงกว่าร้านอื่น, ไม่มีของ, ลูกค้าเงียบ" aria-invalid={!!fe?.lostReason} />
         </Field>

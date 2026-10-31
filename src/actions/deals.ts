@@ -3,12 +3,12 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { CLOSED_STAGES, DEAL_STAGES, type DealStageKey } from "@/lib/deal-stages";
+import { LOST, isClosedStage } from "@/lib/deal-stages";
+import { listStages } from "@/lib/stages";
 import { displayName } from "@/lib/format";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
-const STAGE_KEYS = DEAL_STAGES.map((s) => s.key) as [DealStageKey, ...DealStageKey[]];
 
 const opt = (max: number) =>
   z
@@ -37,14 +37,14 @@ const DealSchema = z
       .nullish()
       .transform((v) => (v ? Number(v.replace(/[,\s฿]/g, "")) : null))
       .refine((n) => n === null || (Number.isFinite(n) && n >= 0 && n < 1e10), "มูลค่าไม่ถูกต้อง"),
-    stage: z.enum(STAGE_KEYS).default("INQUIRY"),
+    stage: z.string().trim().max(40).nullish(),
     quoteNo: opt(60),
     nextFollowUpAt: dateInput,
     expectedCloseDate: dateInput,
     lostReason: opt(300),
     ownerId: opt(40),
   })
-  .refine((v) => v.stage !== "LOST" || v.lostReason, { message: "ระบุเหตุผลที่ลูกค้าไม่ซื้อ", path: ["lostReason"] });
+  .refine((v) => v.stage !== LOST || v.lostReason, { message: "ระบุเหตุผลที่ลูกค้าไม่ซื้อ", path: ["lostReason"] });
 
 export type DealFormState = ActionResult<{ id: string }> | undefined;
 
@@ -73,13 +73,22 @@ function fieldErrors(e: z.ZodError) {
   return out;
 }
 
-const closedAtFor = (stage: DealStageKey) => (CLOSED_STAGES.includes(stage) ? new Date() : null);
+const closedAtFor = (stage: string) => (isClosedStage(stage) ? new Date() : null);
+
+/** ตรวจว่าขั้นมีอยู่จริง — ไม่ระบุ = ขั้นแรก */
+async function resolveStage(stage: string | null | undefined): Promise<string | null> {
+  const stages = await listStages();
+  if (!stage) return stages[0]?.id ?? null;
+  return stages.some((s) => s.id === stage) ? stage : null;
+}
 
 export async function createDeal(_prev: DealFormState, fd: FormData): Promise<DealFormState> {
   const user = await getCurrentUser();
   const parsed = DealSchema.safeParse(read(fd));
   if (!parsed.success) return { ok: false, error: "กรุณาตรวจสอบข้อมูล", fieldErrors: fieldErrors(parsed.error) };
-  const d = parsed.data;
+  const stage = await resolveStage(parsed.data.stage);
+  if (!stage) return { ok: false, error: "ขั้นไม่ถูกต้อง (อาจถูกลบไปแล้ว) กรุณาเลือกใหม่" };
+  const d = { ...parsed.data, stage };
 
   const customer = await prisma.customer.findUnique({ where: { id: d.customerId }, select: { id: true } });
   if (!customer) return { ok: false, error: "ไม่พบลูกค้า", fieldErrors: { customerId: "ไม่พบลูกค้า" } };
@@ -88,7 +97,7 @@ export async function createDeal(_prev: DealFormState, fd: FormData): Promise<De
     data: {
       ...d,
       ownerId: d.ownerId ?? user.id,
-      lostReason: d.stage === "LOST" ? d.lostReason : null,
+      lostReason: d.stage === LOST ? d.lostReason : null,
       closedAt: closedAtFor(d.stage),
       events: { create: { type: "created", toStage: d.stage, actorId: user.id } },
     },
@@ -102,7 +111,9 @@ export async function updateDeal(id: string, _prev: DealFormState, fd: FormData)
   const user = await getCurrentUser();
   const parsed = DealSchema.safeParse(read(fd));
   if (!parsed.success) return { ok: false, error: "กรุณาตรวจสอบข้อมูล", fieldErrors: fieldErrors(parsed.error) };
-  const d = parsed.data;
+  const stage = await resolveStage(parsed.data.stage);
+  if (!stage) return { ok: false, error: "ขั้นไม่ถูกต้อง (อาจถูกลบไปแล้ว) กรุณาเลือกใหม่" };
+  const d = { ...parsed.data, stage };
 
   const current = await prisma.deal.findUnique({ where: { id }, select: { stage: true } });
   if (!current) return { ok: false, error: "ไม่พบดีล" };
@@ -112,7 +123,7 @@ export async function updateDeal(id: string, _prev: DealFormState, fd: FormData)
     where: { id },
     data: {
       ...d,
-      lostReason: d.stage === "LOST" ? d.lostReason : null,
+      lostReason: d.stage === LOST ? d.lostReason : null,
       ...(stageChanged ? { stageChangedAt: new Date(), closedAt: closedAtFor(d.stage) } : {}),
       events: {
         create: stageChanged
@@ -126,13 +137,13 @@ export async function updateDeal(id: string, _prev: DealFormState, fd: FormData)
 }
 
 /** ย้ายขั้น (ลากการ์ด / เลือกจากเมนู) */
-export async function moveDealStage(id: string, stage: DealStageKey, lostReason?: string): Promise<ActionResult> {
+export async function moveDealStage(id: string, stage: string, lostReason?: string): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!STAGE_KEYS.includes(stage)) return { ok: false, error: "ขั้นไม่ถูกต้อง" };
+  if (!(await resolveStage(stage)) || !stage) return { ok: false, error: "ขั้นไม่ถูกต้อง (อาจถูกลบไปแล้ว) กรุณารีเฟรชหน้า" };
   const current = await prisma.deal.findUnique({ where: { id }, select: { stage: true } });
   if (!current) return { ok: false, error: "ไม่พบดีล" };
   if (current.stage === stage) return { ok: true };
-  if (stage === "LOST" && !lostReason?.trim()) return { ok: false, error: "ระบุเหตุผลที่ลูกค้าไม่ซื้อ" };
+  if (stage === LOST && !lostReason?.trim()) return { ok: false, error: "ระบุเหตุผลที่ลูกค้าไม่ซื้อ" };
 
   await prisma.deal.update({
     where: { id },
@@ -140,7 +151,7 @@ export async function moveDealStage(id: string, stage: DealStageKey, lostReason?
       stage,
       stageChangedAt: new Date(),
       closedAt: closedAtFor(stage),
-      lostReason: stage === "LOST" ? lostReason!.trim().slice(0, 300) : null,
+      lostReason: stage === LOST ? lostReason!.trim().slice(0, 300) : null,
       events: { create: { type: "stage", fromStage: current.stage, toStage: stage, actorId: user.id, note: lostReason } },
     },
   });

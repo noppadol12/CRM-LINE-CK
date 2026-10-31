@@ -24,7 +24,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { DEAL_STAGES, baht, followUpState, stageInfo, type DealStageKey } from "@/lib/deal-stages";
+import { LOST, baht, findStage, followUpState, isClosedStage, stageStyle } from "@/lib/deal-stages";
+import { useStages } from "./stages-context";
 import type { DealDTO } from "@/lib/deals";
 import { displayName } from "@/lib/format";
 import { cn, initials } from "@/lib/utils";
@@ -107,16 +108,18 @@ export function DealCard({
   canManage: boolean;
   showCustomer?: boolean;
   /** บอร์ดส่งฟังก์ชันย้ายแบบ optimistic มาให้ ถ้าไม่มีจะเรียก action ตรง */
-  onMove?: (stage: DealStageKey, lostReason?: string) => void;
+  onMove?: (stage: string, lostReason?: string) => void;
   draggable?: boolean;
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lostOpen, setLostOpen] = useState(false);
-  const closed = deal.stage === "WON" || deal.stage === "LOST";
+  const stages = useStages();
+  const closed = isClosedStage(deal.stage);
+  const current = findStage(stages, deal.stage);
   const customerName = displayName(deal.customer);
 
-  async function move(stage: DealStageKey, reason?: string) {
+  async function move(stage: string, reason?: string) {
     if (onMove) return onMove(stage, reason);
     const r = await moveDealStage(deal.id, stage, reason);
     if (!r.ok) toast.error(r.error);
@@ -161,12 +164,14 @@ export function DealCard({
             <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <ArrowRightLeft className="size-3" /> ย้ายไป
             </DropdownMenuLabel>
-            {DEAL_STAGES.filter((s) => s.key !== deal.stage).map((s) => (
-              <DropdownMenuItem key={s.key} onSelect={() => (s.key === "LOST" ? setLostOpen(true) : void move(s.key))}>
-                <span className={cn("size-2 rounded-full", s.dot)} />
-                {s.label}
-              </DropdownMenuItem>
-            ))}
+            {stages
+              .filter((s) => s.id !== deal.stage)
+              .map((s) => (
+                <DropdownMenuItem key={s.id} onSelect={() => (s.id === LOST ? setLostOpen(true) : void move(s.id))}>
+                  <span className={cn("size-2 rounded-full", stageStyle(s.color).dot)} />
+                  {s.name}
+                </DropdownMenuItem>
+              ))}
             {canManage && (
               <>
                 <DropdownMenuSeparator />
@@ -189,7 +194,7 @@ export function DealCard({
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
         {deal.amount != null && <span className="font-semibold tabular-nums">{baht.format(deal.amount)}</span>}
         {!showCustomer && (
-          <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", stageInfo(deal.stage).chip)}>{stageInfo(deal.stage).label}</span>
+          <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", stageStyle(current.color).chip)}>{current.name}</span>
         )}
         <FollowUpBadge date={deal.nextFollowUpAt} closed={closed} />
         {deal.quoteNo && (
@@ -207,14 +212,14 @@ export function DealCard({
           </span>
         )}
       </div>
-      {deal.stage === "LOST" && deal.lostReason && <p className="mt-2 text-xs text-rose-700">เหตุผล: {deal.lostReason}</p>}
+      {deal.stage === LOST && deal.lostReason && <p className="mt-2 text-xs text-rose-700">เหตุผล: {deal.lostReason}</p>}
 
       <DealFormDialog open={editOpen} onOpenChange={setEditOpen} deal={deal} owners={owners} />
       <LostReasonDialog
         open={lostOpen}
         onOpenChange={setLostOpen}
         onSubmit={async (reason) => {
-          await move("LOST", reason);
+          await move(LOST, reason);
           setLostOpen(false);
         }}
       />

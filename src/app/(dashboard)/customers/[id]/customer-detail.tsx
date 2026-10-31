@@ -19,7 +19,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
 import { getCustomer, listTags } from "@/lib/customers";
 import { listCustomerDeals, listOwners } from "@/lib/deals";
-import { baht, OPEN_STAGES } from "@/lib/deal-stages";
+import { baht, isClosedStage } from "@/lib/deal-stages";
+import { WithStages } from "@/components/deals/with-stages";
 import { CustomerDeals } from "@/components/deals/customer-deals";
 import { displayName, formatDate, formatDateTime, formatPhone, timeAgo } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
@@ -96,8 +97,8 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
           <Stat
             icon={Handshake}
             label="ดีลเปิดอยู่"
-            value={`${deals.filter((d) => OPEN_STAGES.includes(d.stage)).length} · ${baht.format(
-              deals.filter((d) => OPEN_STAGES.includes(d.stage)).reduce((sum, d) => sum + (d.amount ?? 0), 0),
+            value={`${deals.filter((d) => !isClosedStage(d.stage)).length} · ${baht.format(
+              deals.filter((d) => !isClosedStage(d.stage)).reduce((sum, d) => sum + (d.amount ?? 0), 0),
             )}`}
           />
           <Stat icon={MessagesSquare} label="ข้อความทั้งหมด" value={thNumber.format(c._count.messages)} />
@@ -178,7 +179,9 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardContent>
-              <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={manager} />
+              <WithStages>
+                <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={manager} />
+              </WithStages>
             </CardContent>
           </Card>
           <NotesPanel

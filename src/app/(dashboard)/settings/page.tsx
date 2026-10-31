@@ -18,6 +18,9 @@ import { Button } from "@/components/ui/button";
 import { DriveResultToast } from "./drive-actions";
 import { DriveStorage } from "./drive-storage";
 import { TeamManager } from "./team-manager";
+import { StagesManager } from "./stages-manager";
+import { listStages } from "@/lib/stages";
+import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
 import { canManageMember, listTeam, rolesAssignableBy } from "@/lib/team";
 
@@ -34,6 +37,9 @@ export default function SettingsPage() {
         <div className="space-y-6 lg:col-span-3">
           <Suspense fallback={<Skeleton className="h-72 rounded-xl" />}>
             <TeamSection />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <StagesSection />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
             <QuickRepliesSection />
@@ -86,6 +92,25 @@ async function TagsSection() {
         <TagsManager
           tags={tags.map((t) => ({ id: t.id, name: t.name, color: t.color, count: t._count.customers }))}
           canEdit={canManage(user)}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function StagesSection() {
+  const user = await getCurrentUser();
+  const [stages, counts] = await Promise.all([listStages(), prisma.deal.groupBy({ by: ["stage"], _count: true })]);
+  return (
+    <Card id="stages" className="scroll-mt-24 gap-0 pb-0">
+      <CardHeader className="border-b pb-5">
+        <CardTitle>ขั้นตอนดีล</CardTitle>
+        <CardDescription>คอลัมน์บนบอร์ดดีล เพิ่ม เปลี่ยนชื่อ สี และลำดับได้ตามวิธีขายของร้าน</CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        <StagesManager
+          canEdit={canManage(user)}
+          stages={stages.map((s) => ({ ...s, count: counts.find((c) => c.stage === s.id)?._count ?? 0 }))}
         />
       </CardContent>
     </Card>

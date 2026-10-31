@@ -14,7 +14,7 @@ import { cn, thNumber } from "@/lib/utils";
 
 type Tag = { id: string; name: string; color: string; count: number };
 
-function ColorPicker({ value, onChange }: { value: string; onChange: (c: TagColor) => void }) {
+export function ColorPicker({ value, onChange }: { value: string; onChange: (c: TagColor) => void }) {
   return (
     <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="สีแท็ก">
       {TAG_COLOR_KEYS.map((key) => (

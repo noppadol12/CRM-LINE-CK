@@ -5,7 +5,7 @@ import { Clock3, Handshake, Percent, Receipt, UserPlus, type LucideIcon } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
-import { baht, bahtCompact, stageInfo } from "@/lib/deal-stages";
+import { baht, bahtCompact } from "@/lib/deal-stages";
 import {
   dailyActivity,
   lostReasons,
@@ -128,7 +128,7 @@ async function Reports({ searchParams }: { searchParams: PageProps<"/reports">["
           </CardHeader>
           <CardContent>
             <HorizontalBars
-              data={pipeline.map((p) => ({ label: stageInfo(p.stage).label, value: p.amount, extra: `${p.deals} ดีล` }))}
+              data={pipeline.map((p) => ({ label: p.name, value: p.amount, extra: `${p.deals} ดีล` }))}
               valueLabel="มูลค่า"
               secondary="จำนวน"
               format="baht"

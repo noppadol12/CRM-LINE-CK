@@ -193,13 +193,21 @@ model AdminNote {
 
 // ---------- Deals / ใบเสนอราคา (Sales pipeline) ----------
 
-enum DealStage {
-  INQUIRY // สอบถาม
-  QUOTED // เสนอราคาแล้ว
-  AWAITING_PAYMENT // รอโอนเงิน
-  SHIPPING // เตรียม/จัดส่ง
-  WON // ปิดการขาย
-  LOST // ไม่ซื้อ
+/**
+ * ขั้นของดีล — เพิ่ม/แก้ชื่อ/สี/ลำดับได้เองที่หน้าตั้งค่า
+ * id "WON" (ปิดการขาย) และ "LOST" (ไม่ซื้อ) เป็นขั้นของระบบ ลบไม่ได้ (รายงานใช้คำนวณยอดขาย/อัตราปิด)
+ * ขั้นเริ่มต้นใช้ id เดิม: INQUIRY, QUOTED, AWAITING_PAYMENT, SHIPPING
+ */
+model DealStageDef {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("slate") // ชื่อสีเดียวกับแท็ก
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  deals Deal[]
+
+  @@map("deal_stages")
 }
 
 model Deal {
@@ -208,7 +216,7 @@ model Deal {
   title             String
   items             String? // สินค้า / รุ่น / จำนวนที่ลูกค้าสนใจ
   amount            Decimal?  @db.Decimal(12, 2) // มูลค่าดีล (บาท)
-  stage             DealStage @default(INQUIRY)
+  stage             String // id ของ deal_stages
   quoteNo           String? // เลขที่ใบเสนอราคา
   nextFollowUpAt    DateTime? // วันนัดติดตาม
   expectedCloseDate DateTime?
@@ -219,8 +227,9 @@ model Deal {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  owner    AdminUser?  @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  owner    AdminUser?   @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  stageDef DealStageDef @relation(fields: [stage], references: [id], onDelete: Restrict)
   events   DealEvent[]
 
   @@index([stage, updatedAt])
@@ -237,8 +246,8 @@ model DealEvent {
   id        String     @id @default(cuid())
   dealId    String
   type      String // created | stage | updated
-  fromStage DealStage?
-  toStage   DealStage?
+  fromStage String? // id ของขั้น (เก็บไว้แม้ขั้นถูกลบภายหลัง)
+  toStage   String?
   note      String?
   actorId   String?
   createdAt DateTime   @default(now())

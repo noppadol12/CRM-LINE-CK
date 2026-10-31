@@ -9,6 +9,7 @@ import type { TagWithCount } from "@/lib/customers";
 import { displayName, formatPhone } from "@/lib/format";
 import { initials } from "@/lib/utils";
 import { CustomerDeals } from "@/components/deals/customer-deals";
+import { WithStages } from "@/components/deals/with-stages";
 import type { Owner } from "@/components/deals/deal-form-dialog";
 import type { DealDTO } from "@/lib/deals";
 
@@ -70,7 +71,9 @@ export function CustomerPanel({
         )}
       </dl>
 
-      <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={canManage} compact />
+      <WithStages>
+        <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={canManage} compact />
+      </WithStages>
 
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">แท็ก</p>

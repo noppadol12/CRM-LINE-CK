@@ -5,6 +5,7 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
+import { DEFAULT_STAGES } from "../src/lib/deal-stages";
 
 const TAGS = [
   { name: "VIP", color: "amber" },
@@ -97,6 +98,18 @@ async function seedQuickReplies() {
   console.log(`seed: สร้างข้อความสำเร็จรูปเริ่มต้น ${STARTER_REPLIES.length} รายการ`);
 }
 
+/** ขั้นดีลเริ่มต้น: ตารางว่าง → ใส่ทั้งชุด · มีแล้ว → แค่ให้แน่ใจว่ามีขั้นของระบบ (ปิดการขาย/ไม่ซื้อ) */
+async function ensureDealStages() {
+  if ((await prisma.dealStageDef.count()) === 0) {
+    await prisma.dealStageDef.createMany({ data: DEFAULT_STAGES, skipDuplicates: true });
+    console.log("seed: สร้างขั้นดีลเริ่มต้น");
+    return;
+  }
+  for (const st of DEFAULT_STAGES.filter((x) => x.id === "WON" || x.id === "LOST")) {
+    await prisma.dealStageDef.upsert({ where: { id: st.id }, update: {}, create: st });
+  }
+}
+
 /** ดีลตัวอย่างสำหรับลูกค้าตัวอย่าง (Udemo…) — สร้างครั้งเดียว */
 async function seedDemoDeals() {
   const demo = await prisma.customer.findMany({
@@ -118,7 +131,11 @@ async function seedDemoDeals() {
     { c: 0, title: "ฟิลเตอร์ดรายเออร์ 10 ตัว", items: "Filter drier 3/8", amount: 2400, stage: "WON", follow: null },
   ] as const;
 
-  for (const d of deals) {
+  const existing = new Set((await prisma.dealStageDef.findMany({ select: { id: true } })).map((x) => x.id));
+  const firstOpen = (await prisma.dealStageDef.findFirst({ where: { id: { notIn: ["WON", "LOST"] } }, orderBy: { sortOrder: "asc" } }))?.id ?? "WON";
+  for (const raw of deals) {
+    // ผู้ใช้อาจลบขั้นเริ่มต้นไปแล้ว → ใช้ขั้นแรกแทน
+    const d = { ...raw, stage: existing.has(raw.stage) ? raw.stage : firstOpen };
     const closed = d.stage === "WON";
     await prisma.deal.create({
       data: {
@@ -141,6 +158,7 @@ async function seedDemoDeals() {
 
 async function main() {
   await bootstrapAdmin();
+  await ensureDealStages();
   await normalizeData();
   await seedQuickReplies();
 

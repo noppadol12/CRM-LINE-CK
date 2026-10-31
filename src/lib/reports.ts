@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { OPEN_STAGES } from "@/lib/deal-stages";
+import { openStages } from "@/lib/stages";
 
 /**
  * รายงานทั้งหมดคิดตามเวลาไทย (UTC+7)
@@ -63,17 +63,18 @@ export async function periodSummary(days: number) {
   };
 }
 
-/** ดีลที่เปิดอยู่ตอนนี้ แยกตามขั้น */
+/** ดีลที่เปิดอยู่ตอนนี้ แยกตามขั้น (ตามลำดับขั้นที่ตั้งไว้) */
 export async function pipelineSnapshot() {
+  const stages = await openStages();
   const rows = await prisma.deal.groupBy({
     by: ["stage"],
-    where: { stage: { in: OPEN_STAGES }, customer: { deletedAt: null } },
+    where: { stage: { in: stages.map((s) => s.id) }, customer: { deletedAt: null } },
     _sum: { amount: true },
     _count: true,
   });
-  return OPEN_STAGES.map((stage) => {
-    const r = rows.find((x) => x.stage === stage);
-    return { stage, amount: num(r?._sum.amount), deals: r?._count ?? 0 };
+  return stages.map((stage) => {
+    const r = rows.find((x) => x.stage === stage.id);
+    return { stage: stage.id, name: stage.name, amount: num(r?._sum.amount), deals: r?._count ?? 0 };
   });
 }
 

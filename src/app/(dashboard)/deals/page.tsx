@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { listBoardDeals, listOwners, parseDealParams } from "@/lib/deals";
 import { canManage } from "@/lib/permissions";
 import { DealBoard } from "./deal-board";
+import { StagesProvider } from "@/components/deals/stages-context";
+import { listStages } from "@/lib/stages";
 
 export const metadata: Metadata = { title: "ดีล · CK CRM" };
 
@@ -19,8 +21,12 @@ export default function DealsPage({ searchParams }: PageProps<"/deals">) {
 async function DealsSection({ searchParams }: { searchParams: PageProps<"/deals">["searchParams"] }) {
   const user = await getCurrentUser();
   const params = parseDealParams(await searchParams);
-  const [deals, owners] = await Promise.all([listBoardDeals({ ...params, userId: user.id }), listOwners()]);
-  return <DealBoard deals={deals} owners={owners} canManage={canManage(user)} />;
+  const [deals, owners, stages] = await Promise.all([listBoardDeals({ ...params, userId: user.id }), listOwners(), listStages()]);
+  return (
+    <StagesProvider stages={stages}>
+      <DealBoard deals={deals} owners={owners} canManage={canManage(user)} />
+    </StagesProvider>
+  );
 }
 
 function BoardSkeleton() {
