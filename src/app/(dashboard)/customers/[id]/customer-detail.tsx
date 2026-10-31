@@ -66,7 +66,7 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
                   {c.lineName}
                 </span>
               )}
-              <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} />
+              <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} chatType={c.chatType} />
               {c.company && (
                 <span className="inline-flex items-center gap-1">
                   <Building2 className="size-3.5" />

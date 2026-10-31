@@ -48,6 +48,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               fullName: thread.customer.fullName,
               lineName: thread.customer.lineName,
               lineUserId: thread.customer.lineUserId,
+              chatType: thread.customer.chatType,
               pictureUrl: thread.customer.pictureUrl,
               followStatus: thread.customer.followStatus,
               unreadCount: thread.customer.unreadCount,
@@ -67,6 +68,8 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               sentAt: m.sentAt,
               senderName: m.sentBy?.name ?? null,
               hasFile: Boolean(m.driveFileId),
+              fromName: m.senderName,
+              fromPicture: m.senderPictureUrl,
               sentVia: m.sentVia,
             }))}
             hasMore={thread.hasMore}

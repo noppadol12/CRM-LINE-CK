@@ -54,7 +54,8 @@ enum FollowStatus {
 
 model Customer {
   id              String    @id @default(cuid())
-  lineUserId      String?   @unique // LINE UID (U + 32 hex) — null ได้ถ้าเพิ่มลูกค้าเอง
+  lineUserId      String?   @unique // LINE UID (U…) หรือ Group ID (C…) / Room ID (R…) — null ได้ถ้าเพิ่มลูกค้าเอง
+  chatType        String    @default("user") // user = แชท 1:1 · group = กลุ่ม LINE · room = แชทหลายคน
   lineName        String? // displayName จากโปรไฟล์ LINE
   pictureUrl      String?
   statusMessage   String?
@@ -161,6 +162,11 @@ model ChatMessage {
   lineMessageId String? @unique // กันข้อความซ้ำเมื่อ LINE retry
   sentById      String? // แอดมินที่ส่ง (OUTBOUND)
   sentVia       String? // reply (ฟรี) | push (นับโควตา)
+
+  // แชทกลุ่ม: ใครในกลุ่มเป็นคนส่ง
+  senderLineId     String?
+  senderName       String?
+  senderPictureUrl String?
 
   sentAt DateTime  @default(now())
   readAt DateTime?

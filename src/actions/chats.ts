@@ -34,12 +34,15 @@ type Recipient = { id: string; lineUserId: string; lastReplyToken: string | null
 async function loadRecipient(customerId: string): Promise<{ customer: Recipient } | { error: string }> {
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
-    select: { id: true, lineUserId: true, followStatus: true, lastReplyToken: true, lastReplyTokenAt: true },
+    select: { id: true, lineUserId: true, chatType: true, followStatus: true, lastReplyToken: true, lastReplyTokenAt: true },
   });
   if (!customer?.lineUserId) return { error: "ลูกค้ารายนี้ไม่มีบัญชี LINE" };
-  if (customer.followStatus === "UNFOLLOWED") return { error: "ลูกค้าบล็อก OA แล้ว ส่งข้อความไม่ได้" };
+  if (customer.followStatus === "UNFOLLOWED") {
+    return { error: customer.chatType === "user" ? "ลูกค้าบล็อก OA แล้ว ส่งข้อความไม่ได้" : "OA ไม่ได้อยู่ในกลุ่มนี้แล้ว ส่งข้อความไม่ได้" };
+  }
   if (!getLineClient()) return { error: "ยังไม่ได้ตั้ง LINE_CHANNEL_ACCESS_TOKEN" };
-  return { customer: { ...customer, lineUserId: customer.lineUserId } };
+  const { id, lastReplyToken, lastReplyTokenAt } = customer;
+  return { customer: { id, lineUserId: customer.lineUserId, lastReplyToken, lastReplyTokenAt } };
 }
 
 /** หลังส่งสำเร็จ: อัปเดตข้อความล่าสุด + ถือว่าอ่านข้อความลูกค้าแล้ว */

@@ -61,6 +61,7 @@ export async function listCustomers(f: CustomerFilters) {
       select: {
         id: true,
         lineUserId: true,
+        chatType: true,
         lineName: true,
         fullName: true,
         pictureUrl: true,

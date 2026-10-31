@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS = {
@@ -6,7 +7,24 @@ const STATUS = {
   UNKNOWN: { label: "เพิ่มเอง", dot: "bg-slate-400", text: "text-muted-foreground" },
 } as const;
 
-export function FollowStatusBadge({ status, className }: { status: keyof typeof STATUS; className?: string }) {
+export function FollowStatusBadge({
+  status,
+  chatType = "user",
+  className,
+}: {
+  status: keyof typeof STATUS;
+  chatType?: string;
+  className?: string;
+}) {
+  if (chatType !== "user") {
+    const left = status === "UNFOLLOWED";
+    return (
+      <span className={cn("inline-flex items-center gap-1.5 text-xs whitespace-nowrap", left ? "text-rose-700" : "text-sky-700", className)}>
+        <Users className="size-3" />
+        {left ? "OA ออกจากกลุ่มแล้ว" : chatType === "room" ? "แชทหลายคน" : "แชทกลุ่ม LINE"}
+      </span>
+    );
+  }
   const s = STATUS[status];
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs whitespace-nowrap", s.text, className)}>

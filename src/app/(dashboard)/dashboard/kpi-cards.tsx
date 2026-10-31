@@ -22,8 +22,9 @@ export async function KpiCards() {
 
   const active = { deletedAt: null };
   const [customers, newThisMonth, awaiting, openDeals] = await Promise.all([
-    prisma.customer.count({ where: active }),
-    prisma.customer.count({ where: { ...active, createdAt: { gte: startOfMonthBangkok() } } }),
+    // นับเฉพาะลูกค้า (ไม่รวมแชทกลุ่ม)
+    prisma.customer.count({ where: { ...active, chatType: "user" } }),
+    prisma.customer.count({ where: { ...active, chatType: "user", createdAt: { gte: startOfMonthBangkok() } } }),
     prisma.customer.count({ where: { ...active, unreadCount: { gt: 0 } } }),
     prisma.deal.aggregate({
       where: { stage: { notIn: CLOSED_STAGES }, customer: { deletedAt: null } },

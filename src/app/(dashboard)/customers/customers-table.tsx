@@ -110,7 +110,7 @@ export function CustomersTable({ rows, trash, canManage, hasFilter }: Props) {
                 {c._count.deals > 0 ? thNumber.format(c._count.deals) : <span className="font-normal text-muted-foreground">—</span>}
               </TableCell>
               <TableCell className="hidden xl:table-cell">
-                <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} />
+                <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} chatType={c.chatType} />
               </TableCell>
               <TableCell className="hidden text-sm whitespace-nowrap text-muted-foreground md:table-cell">
                 {trash && c.deletedAt

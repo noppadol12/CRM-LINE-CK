@@ -37,6 +37,7 @@ export async function listConversations({ q, filter }: { q?: string; filter: Inb
     select: {
       id: true,
       lineUserId: true,
+      chatType: true,
       lineName: true,
       fullName: true,
       pictureUrl: true,

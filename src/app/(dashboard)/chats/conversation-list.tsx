@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ban, Loader2, Search } from "lucide-react";
+import { Ban, Loader2, Search, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
@@ -97,10 +97,16 @@ export function ConversationList({ conversations, selectedId }: { conversations:
                     {c.pictureUrl && <AvatarImage src={c.pictureUrl} alt="" />}
                     <AvatarFallback>{initials(name)}</AvatarFallback>
                   </Avatar>
-                  {c.followStatus === "UNFOLLOWED" && (
-                    <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-card p-0.5" title="บล็อก OA แล้ว">
+                  {c.followStatus === "UNFOLLOWED" ? (
+                    <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-card p-0.5" title={c.chatType === "user" ? "บล็อก OA แล้ว" : "OA ออกจากกลุ่มแล้ว"}>
                       <Ban className="size-3 text-rose-500" />
                     </span>
+                  ) : (
+                    c.chatType !== "user" && (
+                      <span className="absolute -right-0.5 -bottom-0.5 rounded-full bg-card p-0.5" title="แชทกลุ่ม">
+                        <Users className="size-3 text-sky-600" />
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

@@ -18,6 +18,7 @@ type ThreadCustomer = {
   fullName: string | null;
   lineName: string | null;
   lineUserId: string | null;
+  chatType: string;
   pictureUrl: string | null;
   followStatus: "FOLLOWING" | "UNFOLLOWED" | "UNKNOWN";
   unreadCount: number;
@@ -116,6 +117,7 @@ export function ChatThread({
 
   const name = displayName(customer);
   const blocked = customer.followStatus === "UNFOLLOWED";
+  const group = customer.chatType !== "user";
   const canSend = Boolean(customer.lineUserId) && !blocked;
 
   const backHref = (() => {
@@ -239,7 +241,15 @@ export function ChatThread({
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {blocked ? "บล็อก OA แล้ว" : customer.fullName && customer.lineName ? `LINE: ${customer.lineName}` : "ลูกค้า LINE"}
+            {group
+              ? blocked
+                ? "OA ถูกนำออกจากกลุ่มแล้ว"
+                : "แชทกลุ่ม · ข้อความที่ส่งจะเห็นทุกคนในกลุ่ม"
+              : blocked
+                ? "บล็อก OA แล้ว"
+                : customer.fullName && customer.lineName
+                  ? `LINE: ${customer.lineName}`
+                  : "ลูกค้า LINE"}
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
@@ -353,7 +363,11 @@ export function ChatThread({
         ) : (
           <p className={cn("flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground")}>
             <Ban className="size-4" />
-            {blocked ? "ลูกค้าบล็อก OA แล้ว ส่งข้อความไม่ได้" : "ลูกค้ารายนี้ไม่มีบัญชี LINE"}
+            {blocked
+              ? group
+                ? "OA ไม่ได้อยู่ในกลุ่มนี้แล้ว ส่งข้อความไม่ได้"
+                : "ลูกค้าบล็อก OA แล้ว ส่งข้อความไม่ได้"
+              : "ลูกค้ารายนี้ไม่มีบัญชี LINE"}
           </p>
         )}
         {canSend && (

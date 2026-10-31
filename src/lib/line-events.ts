@@ -2,7 +2,7 @@ import "server-only";
 import type { webhook } from "@line/bot-sdk";
 import { Prisma } from "@/generated/prisma/client";
 import type { MessageType } from "@/generated/prisma/client";
-import { fetchLineProfile } from "@/lib/line";
+import { fetchGroupSummary, fetchLineProfile, fetchMemberProfile } from "@/lib/line";
 import { MEDIA_TYPES, saveMessageMedia } from "@/lib/media";
 import { displayName } from "@/lib/format";
 import { sendPush } from "@/lib/push";
@@ -88,34 +88,121 @@ async function ensureCustomer(lineUserId: string, opts: { follow?: boolean } = {
   return { id: existing.id };
 }
 
-function userIdOf(event: webhook.Event): string | null {
+type ChatSource = { chatType: "user" | "group" | "room"; chatId: string; senderId: string | null };
+
+/** แชทนี้มาจากไหน: 1:1 (user) / กลุ่ม (group) / แชทหลายคน (room) */
+function sourceOf(event: webhook.Event): ChatSource | null {
   const src = event.source;
-  return src && src.type === "user" ? ((src as webhook.UserSource).userId ?? null) : null;
+  if (!src) return null;
+  if (src.type === "user") {
+    const id = (src as webhook.UserSource).userId;
+    return id ? { chatType: "user", chatId: id, senderId: id } : null;
+  }
+  if (src.type === "group") {
+    const g = src as webhook.GroupSource;
+    return { chatType: "group", chatId: g.groupId, senderId: g.userId ?? null };
+  }
+  if (src.type === "room") {
+    const r = src as webhook.RoomSource;
+    return { chatType: "room", chatId: r.roomId, senderId: r.userId ?? null };
+  }
+  return null;
+}
+
+/** หา/สร้างห้องแชทกลุ่ม (เก็บในตาราง customers เหมือนลูกค้า เพื่อให้ใช้ inbox/ดีล/โน้ตร่วมกันได้) */
+async function ensureGroupChat(src: ChatSource) {
+  const existing = await prisma.customer.findUnique({
+    where: { lineUserId: src.chatId },
+    select: { id: true, lineName: true, profileSyncedAt: true, followStatus: true, deletedAt: true },
+  });
+  const stale = !existing?.profileSyncedAt || Date.now() - existing.profileSyncedAt.getTime() > PROFILE_REFRESH_MS || !existing.lineName;
+  const summary = src.chatType === "group" && stale ? await fetchGroupSummary(src.chatId) : null;
+  const profile = summary ? { lineName: summary.name, pictureUrl: summary.pictureUrl, profileSyncedAt: new Date() } : {};
+
+  if (!existing) {
+    try {
+      return await prisma.customer.create({
+        data: { lineUserId: src.chatId, chatType: src.chatType, followStatus: "FOLLOWING", followedAt: new Date(), ...profile },
+        select: { id: true },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        return prisma.customer.findUniqueOrThrow({ where: { lineUserId: src.chatId }, select: { id: true } });
+      }
+      throw e;
+    }
+  }
+  const data: Prisma.CustomerUpdateInput = { ...profile };
+  if (existing.followStatus !== "FOLLOWING") data.followStatus = "FOLLOWING";
+  if (existing.deletedAt) data.deletedAt = null;
+  if (Object.keys(data).length > 0) await prisma.customer.update({ where: { id: existing.id }, data });
+  return { id: existing.id };
+}
+
+function ensureConversation(src: ChatSource, opts: { follow?: boolean } = {}) {
+  return src.chatType === "user" ? ensureCustomer(src.chatId, opts) : ensureGroupChat(src);
+}
+
+/** ชื่อ/รูปคนส่งในกลุ่ม — ใช้ชื่อที่เคยเก็บไว้ภายใน 1 วัน ไม่ต้องถาม LINE ทุกข้อความ */
+async function resolveSender(conversationId: string, src: ChatSource) {
+  if (src.chatType === "user" || !src.senderId) return null;
+  const known = await prisma.chatMessage.findFirst({
+    where: {
+      customerId: conversationId,
+      senderLineId: src.senderId,
+      senderName: { not: null },
+      sentAt: { gte: new Date(Date.now() - PROFILE_REFRESH_MS) },
+    },
+    orderBy: { sentAt: "desc" },
+    select: { senderName: true, senderPictureUrl: true },
+  });
+  if (known?.senderName) return { name: known.senderName, pictureUrl: known.senderPictureUrl };
+  const p = await fetchMemberProfile(src.chatType, src.chatId, src.senderId);
+  return p ? { name: p.displayName, pictureUrl: p.pictureUrl } : null;
 }
 
 /** ประมวลผล event หนึ่งรายการ — ต้องรันซ้ำได้ปลอดภัย (LINE อาจส่งซ้ำ) */
 export async function processLineEvent(event: webhook.Event): Promise<string> {
-  const userId = userIdOf(event);
-  if (!userId) return "skip: ไม่ใช่แชท 1:1 (กลุ่ม/ห้อง)";
+  const src = sourceOf(event);
+  if (!src) return "skip: ไม่ทราบแหล่งที่มา";
 
   switch (event.type) {
     case "follow": {
-      await ensureCustomer(userId, { follow: true });
+      if (src.chatType !== "user") return "skip: follow";
+      await ensureCustomer(src.chatId, { follow: true });
       return "follow";
     }
 
     case "unfollow": {
+      if (src.chatType !== "user") return "skip: unfollow";
       await prisma.customer.updateMany({
-        where: { lineUserId: userId },
+        where: { lineUserId: src.chatId },
         data: { followStatus: "UNFOLLOWED", unfollowedAt: new Date(event.timestamp) },
       });
       return "unfollow";
     }
 
+    // OA ถูกเชิญเข้ากลุ่ม / ถูกนำออกจากกลุ่ม
+    case "join": {
+      await ensureConversation(src);
+      return `join:${src.chatType}`;
+    }
+
+    case "leave": {
+      await prisma.customer.updateMany({
+        where: { lineUserId: src.chatId },
+        data: { followStatus: "UNFOLLOWED", unfollowedAt: new Date(event.timestamp) },
+      });
+      return `leave:${src.chatType}`;
+    }
+
     case "message": {
       const e = event as webhook.MessageEvent;
-      const customer = await ensureCustomer(userId);
-      const { type, text, preview } = describeMessage(e.message);
+      const customer = await ensureConversation(src);
+      const described = describeMessage(e.message);
+      const { type, text } = described;
+      const sender = await resolveSender(customer.id, src);
+      const preview = sender ? `${sender.name}: ${described.preview}` : described.preview;
       const sentAt = new Date(e.timestamp);
 
       let created: { id: string };
@@ -130,6 +217,9 @@ export async function processLineEvent(event: webhook.Event): Promise<string> {
             payload: e.message as unknown as Prisma.InputJsonValue,
             lineMessageId: e.message.id,
             sentAt,
+            ...(src.chatType !== "user"
+              ? { senderLineId: src.senderId, senderName: sender?.name ?? null, senderPictureUrl: sender?.pictureUrl ?? null }
+              : {}),
           },
         });
       } catch (err) {

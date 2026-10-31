@@ -221,7 +221,7 @@ async function Reports({ searchParams }: { searchParams: PageProps<"/reports">["
       </div>
 
       <p className="text-xs text-muted-foreground">
-        เวลาตอบแชทนับจากข้อความแรกของลูกค้าในแต่ละรอบ ถึงข้อความแรกที่ตอบผ่านระบบนี้ (ข้อความที่ตอบจากแอป LINE OA Manager โดยตรงไม่ถูกนับ) ·
+        เวลาตอบแชทนับเฉพาะแชท 1:1 (ไม่รวมแชทกลุ่ม) จากข้อความแรกของลูกค้าในแต่ละรอบ ถึงข้อความแรกที่ตอบผ่านระบบนี้ (ข้อความที่ตอบจากแอป LINE OA Manager โดยตรงไม่ถูกนับ) ·
         ยังรอตอบอยู่ {thNumber.format(resp.waiting)} รอบ
       </p>
     </>

@@ -45,7 +45,7 @@ export async function periodSummary(days: number) {
   const [won, lost, newCustomers] = await Promise.all([
     prisma.deal.aggregate({ where: { stage: "WON", closedAt: { gte: since } }, _sum: { amount: true }, _count: true, _avg: { amount: true } }),
     prisma.deal.count({ where: { stage: "LOST", closedAt: { gte: since } } }),
-    prisma.customer.count({ where: { createdAt: { gte: since }, deletedAt: null } }),
+    prisma.customer.count({ where: { createdAt: { gte: since }, deletedAt: null, chatType: "user" } }),
   ]);
   const cycle = await prisma.$queryRaw<{ days: unknown }[]>`
     SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY GREATEST(0, EXTRACT(EPOCH FROM ("closedAt" - "createdAt")) / 86400)) AS days
@@ -106,7 +106,7 @@ export async function dailyActivity(days: number) {
       (SELECT COUNT(DISTINCT m."customerId") FROM chat_messages m
         WHERE m.direction = 'INBOUND' AND (m."sentAt" + interval '7 hours')::date = d.day) AS customers,
       (SELECT COUNT(*) FROM customers c
-        WHERE c."deletedAt" IS NULL AND (c."createdAt" + interval '7 hours')::date = d.day) AS "newCustomers"
+        WHERE c."deletedAt" IS NULL AND c."chatType" = 'user' AND (c."createdAt" + interval '7 hours')::date = d.day) AS "newCustomers"
     FROM d ORDER BY d.day`;
   return rows.map((r) => ({ day: r.day, inbound: num(r.inbound), customers: num(r.customers), newCustomers: num(r.newCustomers) }));
 }
@@ -119,9 +119,10 @@ export async function responseTimes(days: number) {
   const since = new Date(Date.now() - days * 86_400_000);
   const rows = await prisma.$queryRaw<{ median: unknown; p90: unknown; answered: unknown; waiting: unknown }[]>`
     WITH m AS (
-      SELECT "customerId", direction, "sentAt",
-        lag(direction) OVER (PARTITION BY "customerId" ORDER BY "sentAt") AS prev
-      FROM chat_messages
+      SELECT cm."customerId", cm.direction, cm."sentAt",
+        lag(cm.direction) OVER (PARTITION BY cm."customerId" ORDER BY cm."sentAt") AS prev
+      FROM chat_messages cm
+      JOIN customers c ON c.id = cm."customerId" AND c."chatType" = 'user' -- ไม่นับแชทกลุ่ม (สมาชิกคุยกันเอง)
     ),
     starts AS (
       SELECT "customerId", "sentAt" FROM m

@@ -23,7 +23,13 @@ export function displayName(c: { fullName?: string | null; lineName?: string | n
   return (
     c.fullName?.trim() ||
     c.lineName?.trim() ||
-    (c.lineUserId ? `ผู้ใช้ LINE ···${c.lineUserId.slice(-4)}` : "ไม่ระบุชื่อ")
+    (c.lineUserId
+      ? c.lineUserId.startsWith("C")
+        ? `กลุ่ม LINE ···${c.lineUserId.slice(-4)}`
+        : c.lineUserId.startsWith("R")
+          ? `แชทหลายคน ···${c.lineUserId.slice(-4)}`
+          : `ผู้ใช้ LINE ···${c.lineUserId.slice(-4)}`
+      : "ไม่ระบุชื่อ")
   );
 }
 

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Clock, FileText, ImageOff, MapPin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn, initials } from "@/lib/utils";
 
 export type BubbleMessage = {
   id: string;
@@ -14,6 +15,9 @@ export type BubbleMessage = {
   sentAt: Date;
   senderName: string | null;
   hasFile?: boolean;
+  /** แชทกลุ่ม: ชื่อ/รูปสมาชิกที่ส่ง */
+  fromName?: string | null;
+  fromPicture?: string | null;
   sentVia?: string | null;
   pending?: boolean;
   /** รูปตัวอย่างระหว่างส่ง (blob URL) */
@@ -110,6 +114,25 @@ function Content({ m, outbound }: { m: BubbleMessage; outbound: boolean }) {
 }
 
 export function MessageBubble({ m }: { m: BubbleMessage }) {
+  // แชทกลุ่ม: แสดงรูปและชื่อคนส่งข้างข้อความ
+  if (m.direction === "INBOUND" && m.fromName) {
+    return (
+      <div className="flex items-start gap-2">
+        <Avatar className="mt-4 size-7">
+          {m.fromPicture && <AvatarImage src={m.fromPicture} alt="" />}
+          <AvatarFallback className="text-[10px]">{initials(m.fromName)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="mb-0.5 px-1 text-[11px] font-medium text-muted-foreground">{m.fromName}</p>
+          <BubbleBody m={m} />
+        </div>
+      </div>
+    );
+  }
+  return <BubbleBody m={m} />;
+}
+
+function BubbleBody({ m }: { m: BubbleMessage }) {
   const outbound = m.direction === "OUTBOUND";
   const bare = m.type === "STICKER" || m.type === "IMAGE" || m.type === "VIDEO";
 

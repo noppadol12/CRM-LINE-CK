@@ -43,7 +43,7 @@ export function CustomerPanel({
             {name}
           </Link>
           <div className="mt-1 flex justify-center">
-            <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} />
+            <FollowStatusBadge status={c.lineUserId ? c.followStatus : "UNKNOWN"} chatType={c.chatType} />
           </div>
         </div>
       </div>
