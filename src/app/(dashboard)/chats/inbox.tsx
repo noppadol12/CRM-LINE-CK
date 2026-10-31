@@ -6,6 +6,7 @@ import { listCustomerDeals, listOwners } from "@/lib/deals";
 import { listQuickReplies } from "@/lib/quick-replies";
 import { canManage } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { REPLY_WINDOW_MS } from "@/lib/line-send";
 import { AutoRefresh } from "./auto-refresh";
 import { ChatThread } from "./chat-thread";
 import { ConversationList } from "./conversation-list";
@@ -51,6 +52,11 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               followStatus: thread.customer.followStatus,
               unreadCount: thread.customer.unreadCount,
             }}
+            freeReplyUntil={
+              thread.customer.lastReplyToken && thread.customer.lastReplyTokenAt
+                ? thread.customer.lastReplyTokenAt.getTime() + REPLY_WINDOW_MS
+                : null
+            }
             messages={thread.messages.map((m) => ({
               id: m.id,
               direction: m.direction,
@@ -60,6 +66,8 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               lineMessageId: m.lineMessageId,
               sentAt: m.sentAt,
               senderName: m.sentBy?.name ?? null,
+              hasFile: Boolean(m.driveFileId),
+              sentVia: m.sentVia,
             }))}
             hasMore={thread.hasMore}
             limit={params.limit}

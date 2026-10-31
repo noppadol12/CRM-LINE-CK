@@ -3,9 +3,9 @@
 import { Fragment, useEffect, useLayoutEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Ban, Loader2, SendHorizontal, UserRound } from "lucide-react";
+import { ArrowLeft, Ban, Loader2, Paperclip, SendHorizontal, UserRound, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { markConversationRead, sendChatMessage } from "@/actions/chats";
+import { markConversationRead, sendChatAttachment, sendChatMessage } from "@/actions/chats";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { displayName } from "@/lib/format";
@@ -26,6 +26,57 @@ type ThreadCustomer = {
 const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" });
 const dayLabelFmt = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
+const MAX_UPLOAD = 4 * 1024 * 1024;
+const ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv";
+
+/** ย่อรูปก่อนส่ง: ด้านยาวไม่เกิน 1600px เป็น JPEG ไม่เกิน ~1 MB (LINE กำหนดรูปตัวอย่างไม่เกิน 1 MB) */
+async function prepareImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#fff"; // พื้นหลังขาวสำหรับ PNG โปร่งใส
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  let quality = 0.85;
+  let blob: Blob | null = null;
+  while (quality >= 0.45) {
+    blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", quality));
+    if (blob && blob.size <= 1_000_000) break;
+    quality -= 0.1;
+  }
+  if (!blob) throw new Error("แปลงรูปไม่สำเร็จ");
+  const base = file.name.replace(/\.[^.]+$/, "") || "image";
+  return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+}
+
+/** แสดงว่าตอนนี้ตอบได้ฟรี (มี reply token ที่ยังไม่หมดอายุ) พร้อมนับถอยหลัง */
+function FreeReplyHint({ until }: { until: number | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!until) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [until]);
+  const left = until ? Math.floor((until - now) / 1000) : 0;
+  if (left <= 0)
+    return (
+      <>
+        <span className="hidden sm:inline">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · วางรูปได้ด้วย Ctrl+V · </span>
+        ข้อความนับโควตาของ OA
+      </>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 font-medium text-primary">
+      <Zap className="size-3" />
+      ตอบตอนนี้ฟรี ไม่นับโควตา (เหลือ {left} วิ)
+    </span>
+  );
+}
+
 function dayLabel(d: Date, today: string, yesterday: string) {
   const k = dayKey.format(d);
   if (k === today) return "วันนี้";
@@ -40,8 +91,10 @@ export function ChatThread({
   limit,
   quickReplies,
   canManage,
+  freeReplyUntil,
 }: {
   customer: ThreadCustomer;
+  freeReplyUntil: number | null;
   messages: BubbleMessage[];
   hasMore: boolean;
   limit: number;
@@ -51,6 +104,7 @@ export function ChatThread({
   const params = useSearchParams();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const nearBottom = useRef(true);
   const [text, setText] = useState("");
   const [sending, start] = useTransition();
@@ -121,11 +175,51 @@ export function ChatThread({
         pending: true,
       });
       const r = await sendChatMessage(customer.id, body);
+      if (r.ok && r.message) toast.success(r.message, { duration: 2500 });
       if (!r.ok) {
         toast.error(r.error);
         setText(body); // คืนข้อความให้แก้แล้วส่งใหม่ได้
       }
       textRef.current?.focus();
+    });
+  }
+
+  function sendFile(original: File) {
+    if (!canSend) return;
+    nearBottom.current = true;
+    start(async () => {
+      let file = original;
+      try {
+        if (original.type.startsWith("image/")) file = await prepareImage(original);
+      } catch {
+        toast.error("เปิดรูปนี้ไม่ได้ (รองรับ JPG / PNG / WebP)");
+        return;
+      }
+      if (file.size > MAX_UPLOAD) {
+        toast.error("ไฟล์ใหญ่เกิน 4 MB");
+        return;
+      }
+      const isImage = file.type === "image/jpeg" || file.type === "image/png";
+      const localUrl = isImage ? URL.createObjectURL(file) : undefined;
+      addOptimistic({
+        id: `tmp-${Date.now()}`,
+        direction: "OUTBOUND",
+        type: isImage ? "IMAGE" : "FILE",
+        text: isImage ? null : file.name,
+        payload: null,
+        lineMessageId: null,
+        sentAt: new Date(),
+        senderName: null,
+        pending: true,
+        localUrl,
+      });
+      const fd = new FormData();
+      fd.set("customerId", customer.id);
+      fd.set("file", file);
+      const r = await sendChatAttachment(fd);
+      if (r.ok) {
+        if (r.message?.includes("ฟรี")) toast.success(r.message);
+      } else toast.error(r.error, { duration: 10000 });
     });
   }
 
@@ -200,6 +294,29 @@ export function ChatThread({
             }}
             className="flex items-end gap-2"
           >
+            <input
+              ref={fileRef}
+              type="file"
+              accept={ACCEPT}
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) sendFile(f);
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-10 shrink-0 rounded-lg text-muted-foreground"
+              onClick={() => fileRef.current?.click()}
+              disabled={sending}
+              aria-label="แนบรูปหรือไฟล์"
+              title="แนบรูปหรือไฟล์ (ไม่เกิน 4 MB)"
+            >
+              <Paperclip />
+            </Button>
             <QuickReplyPicker
               replies={quickReplies}
               customerName={customer.fullName || customer.lineName || "ลูกค้า"}
@@ -210,6 +327,13 @@ export function ChatThread({
               ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onPaste={(e) => {
+                const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/"));
+                if (f) {
+                  e.preventDefault();
+                  sendFile(f);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
@@ -232,7 +356,11 @@ export function ChatThread({
             {blocked ? "ลูกค้าบล็อก OA แล้ว ส่งข้อความไม่ได้" : "ลูกค้ารายนี้ไม่มีบัญชี LINE"}
           </p>
         )}
-        <p className="mt-1.5 px-1 text-[11px] text-muted-foreground">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · นับโควตาข้อความของ OA</p>
+        {canSend && (
+          <p className="mt-1.5 px-1 text-[11px] text-muted-foreground">
+            <FreeReplyHint key={freeReplyUntil ?? 0} until={freeReplyUntil} />
+          </p>
+        )}
       </footer>
     </section>
   );

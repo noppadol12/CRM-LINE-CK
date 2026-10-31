@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Thai } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 
 const plexThai = IBM_Plex_Sans_Thai({
@@ -12,6 +13,14 @@ const plexThai = IBM_Plex_Sans_Thai({
 export const metadata: Metadata = {
   title: "CK CRM",
   description: "CRM สำหรับทีมขาย เชื่อมต่อ LINE OA",
+  applicationName: "CK CRM",
+  appleWebApp: { capable: true, title: "CK CRM", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#00a24f",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -20,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col font-[family-name:var(--font-sans-thai)]">
         {children}
         <Toaster />
+        <PwaRegister />
       </body>
     </html>
   );

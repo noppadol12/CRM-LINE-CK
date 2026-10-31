@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     ];
   },
   cacheComponents: true,
+  // ส่งรูป/ไฟล์ให้ลูกค้าผ่าน Server Action (Vercel รับ request ได้ไม่เกิน ~4.5 MB)
+  experimental: { serverActions: { bodySizeLimit: "4.5mb" } },
   partialPrefetching: true,
   turbopack: {
     rules: {

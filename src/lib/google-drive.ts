@@ -276,3 +276,8 @@ export async function driveQuota() {
   const q = about.storageQuota ?? {};
   return { limit: q.limit ? Number(q.limit) : null, usage: q.usage ? Number(q.usage) : null };
 }
+
+/** ลบไฟล์ที่ระบบสร้าง (ใช้ตอนส่งไฟล์ให้ลูกค้าไม่สำเร็จ) */
+export async function deleteDriveFile(token: string, fileId: string) {
+  await driveFetch(token, `/drive/v3/files/${encodeURIComponent(fileId)}`, { method: "DELETE" });
+}

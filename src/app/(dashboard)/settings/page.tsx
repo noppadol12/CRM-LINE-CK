@@ -12,6 +12,9 @@ import { QuickRepliesManager } from "./quick-replies-manager";
 import { listQuickReplies } from "@/lib/quick-replies";
 import { TagsManager } from "./tags-manager";
 import { DemoData } from "./demo-data";
+import { DeviceSettings } from "./device-settings";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DriveResultToast } from "./drive-actions";
 import { DriveStorage } from "./drive-storage";
 import { TeamManager } from "./team-manager";
@@ -43,11 +46,23 @@ export default function SettingsPage() {
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <AccountSection />
           </Suspense>
+          <Card id="device" className="scroll-mt-24">
+            <CardHeader>
+              <CardTitle>แจ้งเตือนและแอปมือถือ</CardTitle>
+              <CardDescription>ตั้งค่าแยกแต่ละเครื่อง (มือถือ / คอมพิวเตอร์) ที่คุณใช้</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeviceSettings />
+            </CardContent>
+          </Card>
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
             <LineConnection />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-72 rounded-xl" />}>
             <DriveStorage />
+          </Suspense>
+          <Suspense fallback={null}>
+            <BackupSection />
           </Suspense>
           <Suspense fallback={null}>
             <DemoData />
@@ -120,6 +135,34 @@ async function TeamSection() {
             isSelf: m.id === user.id,
           }))}
         />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function BackupSection() {
+  const user = await getCurrentUser();
+  if (!canManage(user)) return null;
+  const files = [
+    { kind: "customers", label: "ลูกค้า" },
+    { kind: "messages", label: "ประวัติแชท" },
+    { kind: "deals", label: "ดีล" },
+  ];
+  return (
+    <Card id="backup" className="scroll-mt-24">
+      <CardHeader>
+        <CardTitle>สำรองข้อมูล</CardTitle>
+        <CardDescription>ดาวน์โหลดเป็นไฟล์ CSV เปิดด้วย Excel หรือ Google Sheets ได้ (ภาษาไทยแสดงถูกต้อง) แนะนำให้เก็บไว้เดือนละครั้ง</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {files.map((f) => (
+          <Button key={f.kind} variant="outline" asChild>
+            <a href={`/api/export/${f.kind}`} download>
+              <Download />
+              {f.label}
+            </a>
+          </Button>
+        ))}
       </CardContent>
     </Card>
   );

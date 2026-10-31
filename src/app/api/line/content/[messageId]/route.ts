@@ -3,6 +3,7 @@ import { getApiUser } from "@/lib/auth";
 import { downloadFromDrive, getDriveSession } from "@/lib/google-drive";
 import { lineContentUrl, saveMessageMedia } from "@/lib/media";
 import { prisma } from "@/lib/prisma";
+import { fileResponse } from "@/lib/file-response";
 
 /**
  * GET /api/line/content/:messageId — รูป/วิดีโอ/เสียง/ไฟล์ที่ลูกค้าส่งมาทาง LINE (ต้องล็อกอิน)
@@ -30,7 +31,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/line/content
       const drive = await getDriveSession();
       if (drive) {
         const res = await downloadFromDrive(drive.token, msg.driveFileId, range);
-        if ((res.ok || res.status === 206) && res.body) return passThrough(res, msg.mediaMime, fileName);
+        if ((res.ok || res.status === 206) && res.body) return fileResponse(res, { mime: msg.mediaMime, fileName });
         console.warn(`[content] drive ${res.status} for ${msg.id}`);
       }
     } catch (e) {
@@ -53,26 +54,5 @@ export async function GET(request: Request, ctx: RouteContext<"/api/line/content
   }
 
   if (!msg.driveFileId) after(() => saveMessageMedia(msg.id));
-  return passThrough(res, null, fileName);
-}
-
-// เปิดดูในเบราว์เซอร์ได้เฉพาะชนิดที่ปลอดภัย ที่เหลือ (เช่น .html/.svg ที่ลูกค้าส่งมา) บังคับดาวน์โหลด กันสคริปต์รันบนโดเมนเรา
-const SAFE_INLINE = /^(image\/(jpeg|png|gif|webp)|video\/|audio\/|application\/pdf$)/;
-
-function passThrough(res: Response, mime: string | null, fileName: string | null) {
-  const type = (res.headers.get("content-type") ?? mime ?? "application/octet-stream").split(";")[0].trim();
-  const inline = SAFE_INLINE.test(type);
-  const headers = new Headers({
-    "Content-Type": type,
-    "Cache-Control": "private, max-age=86400",
-    "X-Content-Type-Options": "nosniff",
-  });
-  if (type !== "application/pdf") headers.set("Content-Security-Policy", "default-src 'none'; img-src 'self'; media-src 'self'; sandbox");
-  for (const h of ["content-length", "content-range", "accept-ranges"]) {
-    const v = res.headers.get(h);
-    if (v) headers.set(h, v);
-  }
-  const disposition = inline ? "inline" : "attachment";
-  headers.set("Content-Disposition", fileName ? `${disposition}; filename*=UTF-8''${encodeURIComponent(fileName)}` : disposition);
-  return new Response(res.body, { status: res.status, headers });
+  return fileResponse(res, { fileName });
 }

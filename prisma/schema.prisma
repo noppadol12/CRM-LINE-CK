@@ -39,6 +39,7 @@ model AdminUser {
   sentMessages      ChatMessage[]
   ownedDeals        Deal[]        @relation("DealOwner")
   dealEvents        DealEvent[]
+  pushSubscriptions PushSubscription[]
 
   @@map("admin_users")
 }
@@ -73,6 +74,10 @@ model Customer {
   lastMessageAt      DateTime?
   lastMessagePreview String?
   unreadCount        Int       @default(0)
+
+  // reply token จากข้อความล่าสุด — ตอบด้วย Reply API ได้ฟรี (ไม่นับโควตา) ถ้าตอบทันภายในเวลาสั้น ๆ
+  lastReplyToken   String?
+  lastReplyTokenAt DateTime?
 
   assignedToId String?
   assignedTo   AdminUser? @relation("CustomerAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -155,6 +160,7 @@ model ChatMessage {
 
   lineMessageId String? @unique // กันข้อความซ้ำเมื่อ LINE retry
   sentById      String? // แอดมินที่ส่ง (OUTBOUND)
+  sentVia       String? // reply (ฟรี) | push (นับโควตา)
 
   sentAt DateTime  @default(now())
   readAt DateTime?
@@ -296,4 +302,22 @@ model LoginAttempt {
   @@index([email, createdAt])
   @@index([ip, createdAt])
   @@map("login_attempts")
+}
+
+// ---------- แจ้งเตือนบนมือถือ/คอมพิวเตอร์ (Web Push) ----------
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  user AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

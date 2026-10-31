@@ -37,6 +37,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // ไม่ครอบ /api (webhook ของ LINE ต้องเข้าได้โดยไม่ล็อกอิน) และไฟล์ static
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
+  // ไม่ครอบ /api (webhook ของ LINE ต้องเข้าได้โดยไม่ล็อกอิน) ไฟล์ static และไฟล์ของแอป (manifest / service worker)
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
 };

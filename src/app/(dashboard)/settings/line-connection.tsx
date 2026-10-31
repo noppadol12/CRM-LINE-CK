@@ -11,6 +11,7 @@ import { cn, thNumber } from "@/lib/utils";
 import { CopyButton } from "@/components/copy-button";
 import { WebhookActions } from "./webhook-actions";
 import { RetryWebhooksButton } from "./retry-webhooks-button";
+import { getMessageQuota } from "@/lib/line-send";
 
 type Check = { ok: boolean | null; label: string; detail?: string };
 
@@ -24,10 +25,18 @@ async function expectedWebhookUrl() {
   return `${proto}://${host}/api/line/webhook`;
 }
 
+function startOfMonthBangkok(): Date {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit" })
+    .format(new Date())
+    .split("-")
+    .map(Number);
+  return new Date(Date.UTC(y, m - 1, 1, -7));
+}
+
 async function loadLineStatus() {
   const client = getLineClient();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [bot, endpoint, last, count24h, failed, stuck] = await Promise.all([
+  const [bot, endpoint, last, count24h, failed, stuck, quota, freeReplies] = await Promise.all([
     client?.getBotInfo().catch((e: Error) => ({ error: e.message })) ?? null,
     client?.getWebhookEndpoint().catch(() => null) ?? null,
     prisma.webhookEvent.findFirst({ orderBy: { receivedAt: "desc" }, select: { receivedAt: true, type: true } }),
@@ -42,15 +51,18 @@ async function loadLineStatus() {
         receivedAt: { lte: new Date(Date.now() - 2 * 60_000), gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
       },
     }),
+    getMessageQuota(),
+    // ข้อความที่ตอบฟรีด้วย reply token ในเดือนนี้ (เวลาไทย)
+    prisma.chatMessage.count({ where: { sentVia: "reply", sentAt: { gte: startOfMonthBangkok() } } }),
   ]);
-  return { hasClient: Boolean(client), bot, endpoint, last, count24h, failed, stuck };
+  return { hasClient: Boolean(client), bot, endpoint, last, count24h, failed, stuck, quota, freeReplies };
 }
 
 export async function LineConnection() {
   const user = await getCurrentUser();
   const hasSecret = Boolean(getChannelSecret());
   const url = await expectedWebhookUrl();
-  const { hasClient, bot, endpoint, last, count24h, failed, stuck } = await loadLineStatus();
+  const { hasClient, bot, endpoint, last, count24h, failed, stuck, quota, freeReplies } = await loadLineStatus();
   const client = hasClient;
 
   const botOk = bot && !("error" in bot) ? bot : null;
@@ -145,6 +157,28 @@ export async function LineConnection() {
             </p>
           </div>
         </div>
+
+        {quota && (
+          <div className="space-y-1.5 border-t pt-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">โควตาข้อความเดือนนี้</span>
+              <span className="font-medium tabular-nums">
+                {thNumber.format(quota.used)} / {quota.limit == null ? "ไม่จำกัด" : thNumber.format(quota.limit)}
+              </span>
+            </div>
+            {quota.limit != null && quota.limit > 0 && (
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", quota.used / quota.limit > 0.9 ? "bg-rose-500" : "bg-primary")}
+                  style={{ width: `${Math.min(100, (quota.used / quota.limit) * 100)}%` }}
+                />
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              นับเฉพาะ Push · ตอบฟรีด้วย Reply เดือนนี้ {thNumber.format(freeReplies)} ข้อความ (ระบบใช้ Reply อัตโนมัติเมื่อตอบภายในไม่ถึง 1 นาที)
+            </p>
+          </div>
+        )}
 
         {canManage(user) && stuck > 0 && <RetryWebhooksButton count={stuck} />}
       </CardContent>

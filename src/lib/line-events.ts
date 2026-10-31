@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import type { MessageType } from "@/generated/prisma/client";
 import { fetchLineProfile } from "@/lib/line";
 import { MEDIA_TYPES, saveMessageMedia } from "@/lib/media";
+import { displayName } from "@/lib/format";
+import { sendPush } from "@/lib/push";
 import { prisma } from "@/lib/prisma";
 
 const PROFILE_REFRESH_MS = 24 * 60 * 60 * 1000; // อัปเดตชื่อ/รูปจาก LINE วันละครั้งพอ
@@ -141,6 +143,30 @@ export async function processLineEvent(event: webhook.Event): Promise<string> {
         where: { id: customer.id, OR: [{ lastMessageAt: null }, { lastMessageAt: { lt: sentAt } }] },
         data: { lastMessageAt: sentAt, lastMessagePreview: preview.slice(0, 200) },
       });
+
+      // เก็บ reply token ไว้ตอบฟรี (เฉพาะ event สด ไม่ใช่ที่ LINE ส่งซ้ำ และใหม่กว่า token เดิม)
+      if (e.replyToken && !e.deliveryContext?.isRedelivery) {
+        await prisma.customer.updateMany({
+          where: { id: customer.id, OR: [{ lastReplyTokenAt: null }, { lastReplyTokenAt: { lt: sentAt } }] },
+          data: { lastReplyToken: e.replyToken, lastReplyTokenAt: sentAt },
+        });
+      }
+
+      // แจ้งเตือนทีมบนมือถือ/คอม (ข้ามข้อความเก่าที่ LINE ส่งซ้ำมาช้า)
+      if (Date.now() - sentAt.getTime() < 10 * 60_000) {
+        const c = await prisma.customer.findUnique({
+          where: { id: customer.id },
+          select: { fullName: true, lineName: true, lineUserId: true },
+        });
+        if (c) {
+          await sendPush({
+            title: displayName(c),
+            body: preview.slice(0, 120),
+            url: `/chats?c=${customer.id}`,
+            tag: `chat-${customer.id}`,
+          });
+        }
+      }
 
       // รูป/วิดีโอ/ไฟล์ → คัดลอกไป Google Drive ทันที (ถ้าเชื่อมไว้) เพราะ LINE เก็บไว้ชั่วคราว
       if (MEDIA_TYPES.includes(type)) {

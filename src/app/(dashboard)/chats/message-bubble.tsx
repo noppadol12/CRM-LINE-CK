@@ -13,7 +13,11 @@ export type BubbleMessage = {
   lineMessageId: string | null;
   sentAt: Date;
   senderName: string | null;
+  hasFile?: boolean;
+  sentVia?: string | null;
   pending?: boolean;
+  /** รูปตัวอย่างระหว่างส่ง (blob URL) */
+  localUrl?: string;
 };
 
 const timeFmt = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
@@ -23,7 +27,7 @@ function MediaImage({ src, alt }: { src: string; alt: string }) {
   if (failed) {
     return (
       <span className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-muted-foreground">
-        <ImageOff className="size-4" /> ไฟล์หมดอายุใน LINE แล้ว
+        <ImageOff className="size-4" /> เปิดรูปไม่ได้ (หมดอายุใน LINE หรือ Drive ไม่ได้เชื่อมต่อ)
       </span>
     );
   }
@@ -51,12 +55,19 @@ function Sticker({ id }: { id: string }) {
 }
 
 function Content({ m, outbound }: { m: BubbleMessage; outbound: boolean }) {
-  const media = m.lineMessageId ? `/api/line/content/${m.lineMessageId}` : null;
+  // ไฟล์ที่ทีมส่ง → เก็บใน Drive (/api/media) · ไฟล์จากลูกค้า → /api/line/content (Drive หรือ LINE)
+  const media =
+    m.localUrl ??
+    (m.direction === "INBOUND" && m.lineMessageId
+      ? `/api/line/content/${m.lineMessageId}`
+      : m.hasFile && !m.id.startsWith("tmp-")
+        ? `/api/media/${m.id}`
+        : null);
   const p = m.payload ?? {};
 
   switch (m.type) {
     case "IMAGE":
-      return media ? <MediaImage src={media} alt="รูปจากลูกค้า" /> : <p className="px-3.5 py-2">[รูปภาพ]</p>;
+      return media ? <MediaImage src={media} alt={outbound ? "รูปที่ส่งให้ลูกค้า" : "รูปจากลูกค้า"} /> : <p className="px-3.5 py-2">[รูปภาพ]</p>;
     case "VIDEO":
       return media ? (
         <video src={media} controls preload="none" className="max-h-72 max-w-full rounded-xl bg-black" />
@@ -126,6 +137,11 @@ export function MessageBubble({ m }: { m: BubbleMessage }) {
           <>
             {outbound && m.senderName && <span>{m.senderName} ·</span>}
             {timeFmt.format(m.sentAt)}
+            {outbound && m.sentVia === "reply" && (
+              <span className="text-primary" title="ตอบด้วย Reply token — ไม่นับโควตาข้อความ">
+                · ฟรี
+              </span>
+            )}
           </>
         )}
       </span>
