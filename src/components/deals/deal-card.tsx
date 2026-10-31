@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRightLeft, CalendarClock, FileText, MessagesSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, CalendarClock, FileText, MessagesSquare, MoreHorizontal, Pencil, Trash2, Truck } from "lucide-react";
+import { ShipmentDialog } from "@/components/shipping/shipment-dialog";
 import { toast } from "sonner";
 import { deleteDeal, moveDealStage } from "@/actions/deals";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -114,6 +115,7 @@ export function DealCard({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lostOpen, setLostOpen] = useState(false);
+  const [shipOpen, setShipOpen] = useState(false);
   const stages = useStages();
   const closed = isClosedStage(deal.stage);
   const current = findStage(stages, deal.stage);
@@ -151,6 +153,10 @@ export function DealCard({
             <DropdownMenuItem onSelect={() => setEditOpen(true)}>
               <Pencil />
               แก้ไข
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setShipOpen(true)}>
+              <Truck />
+              บันทึกการส่งของ
             </DropdownMenuItem>
             {deal.customer.lineUserId && (
               <DropdownMenuItem asChild>
@@ -214,6 +220,7 @@ export function DealCard({
       </div>
       {deal.stage === LOST && deal.lostReason && <p className="mt-2 text-xs text-rose-700">เหตุผล: {deal.lostReason}</p>}
 
+      {shipOpen && <ShipmentDialog customerId={deal.customer.id} dealId={deal.id} open onOpenChange={setShipOpen} />}
       <DealFormDialog open={editOpen} onOpenChange={setEditOpen} deal={deal} owners={owners} />
       <LostReasonDialog
         open={lostOpen}

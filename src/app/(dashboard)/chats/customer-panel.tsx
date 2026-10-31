@@ -10,6 +10,7 @@ import { displayName, formatPhone } from "@/lib/format";
 import { initials } from "@/lib/utils";
 import { CustomerDeals } from "@/components/deals/customer-deals";
 import { WithStages } from "@/components/deals/with-stages";
+import { ShippingCard, type ShipmentSummary } from "@/components/shipping/shipping-card";
 import type { Owner } from "@/components/deals/deal-form-dialog";
 import type { DealDTO } from "@/lib/deals";
 
@@ -20,8 +21,10 @@ export function CustomerPanel({
   owners,
   currentUserId,
   canManage,
+  shipments,
 }: {
   thread: Thread;
+  shipments: ShipmentSummary[];
   deals: DealDTO[];
   owners: Owner[];
   tags: TagWithCount[];
@@ -70,6 +73,12 @@ export function CustomerPanel({
           </div>
         )}
       </dl>
+
+      <ShippingCard
+        compact
+        customer={{ id: c.id, province: c.province, shippingNote: c.shippingNote, carrier: c.carrier, backupCarrier: c.backupCarrier }}
+        shipments={shipments}
+      />
 
       <WithStages>
         <CustomerDeals customer={{ id: c.id, name }} deals={deals} owners={owners} canManage={canManage} compact />

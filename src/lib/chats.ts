@@ -57,6 +57,8 @@ export async function getThread(customerId: string, limit: number) {
     where: { id: customerId },
     include: {
       tags: { include: { tag: true }, orderBy: { assignedAt: "asc" } },
+      carrier: { select: { id: true, name: true } },
+      backupCarrier: { select: { id: true, name: true } },
       notes: {
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         include: { author: { select: { name: true } } },

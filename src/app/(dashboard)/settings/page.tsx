@@ -172,6 +172,8 @@ async function BackupSection() {
     { kind: "customers", label: "ลูกค้า" },
     { kind: "messages", label: "ประวัติแชท" },
     { kind: "deals", label: "ดีล" },
+    { kind: "shipments", label: "ประวัติการส่ง" },
+    { kind: "carriers", label: "ขนส่ง × จังหวัด" },
   ];
   return (
     <Card id="backup" className="scroll-mt-24">

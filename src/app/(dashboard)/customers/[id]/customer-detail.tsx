@@ -29,12 +29,20 @@ import { CopyButton } from "@/components/copy-button";
 import { CustomerActions, RestoreBanner } from "./customer-actions";
 import { NotesPanel } from "@/components/customers/notes-panel";
 import { TagEditor } from "@/components/customers/tag-editor";
+import { ShippingCard } from "@/components/shipping/shipping-card";
+import { customerShipments, toShipmentDTO } from "@/lib/shipping";
 
 
 export async function CustomerDetailView({ params }: { params: PageProps<"/customers/[id]">["params"] }) {
   const user = await getCurrentUser();
   const { id } = await params;
-  const [c, allTags, deals, owners] = await Promise.all([getCustomer(id), listTags(), listCustomerDeals(id), listOwners()]);
+  const [c, allTags, deals, owners, shipments] = await Promise.all([
+    getCustomer(id),
+    listTags(),
+    listCustomerDeals(id),
+    listOwners(),
+    customerShipments(id, 8),
+  ]);
   if (!c) notFound();
 
   const name = displayName(c);
@@ -158,6 +166,11 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
               </div>
             </CardContent>
           </Card>
+
+          <ShippingCard
+            customer={{ id: c.id, province: c.province, shippingNote: c.shippingNote, carrier: c.carrier, backupCarrier: c.backupCarrier }}
+            shipments={shipments.map(toShipmentDTO)}
+          />
 
           <Card>
             <CardHeader>

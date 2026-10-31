@@ -89,6 +89,8 @@ export async function getCustomer(id: string) {
     include: {
       tags: { include: { tag: true }, orderBy: { assignedAt: "asc" } },
       assignedTo: { select: { id: true, name: true } },
+      carrier: { select: { id: true, name: true } },
+      backupCarrier: { select: { id: true, name: true } },
       notes: {
         orderBy: [{ isPinned: "desc" }, { createdAt: "desc" }],
         include: { author: { select: { name: true } } },

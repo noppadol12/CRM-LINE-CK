@@ -40,6 +40,7 @@ model AdminUser {
   ownedDeals        Deal[]        @relation("DealOwner")
   dealEvents        DealEvent[]
   pushSubscriptions PushSubscription[]
+  shipments         Shipment[]
 
   @@map("admin_users")
 }
@@ -83,16 +84,27 @@ model Customer {
   assignedToId String?
   assignedTo   AdminUser? @relation("CustomerAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  // การจัดส่ง
+  province        String? // ชื่อจังหวัด (ดู src/lib/provinces.ts)
+  carrierId       String? // ขนส่งหลัก
+  backupCarrierId String? // ขนส่งสำรอง
+  shippingNote    String? // เช่น รับที่ท่ารถหาดใหญ่ โทรแจ้งก่อนส่ง
+  carrier         Carrier? @relation("PrimaryCarrier", fields: [carrierId], references: [id], onDelete: SetNull)
+  backupCarrier   Carrier? @relation("BackupCarrier", fields: [backupCarrierId], references: [id], onDelete: SetNull)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // soft delete — ไม่ลบประวัติแชท/ดีลทิ้ง
 
-  tags     CustomerTag[]
-  messages ChatMessage[]
-  notes    AdminNote[]
-  deals    Deal[]
+  tags      CustomerTag[]
+  messages  ChatMessage[]
+  notes     AdminNote[]
+  deals     Deal[]
+  shipments Shipment[]
 
   @@index([phone])
+  @@index([province])
+  @@index([carrierId])
   @@index([lastMessageAt(sort: Desc)])
   @@index([deletedAt])
   @@map("customers")
@@ -235,8 +247,9 @@ model Deal {
 
   customer Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   owner    AdminUser?   @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  stageDef DealStageDef @relation(fields: [stage], references: [id], onDelete: Restrict)
-  events   DealEvent[]
+  stageDef  DealStageDef @relation(fields: [stage], references: [id], onDelete: Restrict)
+  events    DealEvent[]
+  shipments Shipment[]
 
   @@index([stage, updatedAt])
   @@index([customerId])
@@ -335,4 +348,74 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// ---------- ขนส่ง ----------
+
+model Carrier {
+  id             String   @id @default(cuid())
+  name           String
+  kind           String   @default("freight") // parcel พัสดุด่วน · freight ขนส่งต่างจังหวัด/รถร่วม · post ไปรษณีย์ · ondemand รถเรียก
+  phone          String?
+  lineId         String?
+  dropoffAddress String? // จุดส่งของฝั่งร้าน (ท่ารถ/สาขาในกรุงเทพ)
+  mapUrl         String?
+  cutoffTime     String? // เวลาปิดรับของ เช่น 16:00
+  payment        String? // origin ต้นทาง · destination ปลายทาง · both ได้ทั้งสองแบบ
+  priceNote      String?
+  trackingUrl    String? // ลิงก์ติดตามพัสดุ ใส่ {เลขพัสดุ} แทนเลข
+  note           String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  coverage         CarrierCoverage[]
+  primaryCustomers Customer[]        @relation("PrimaryCarrier")
+  backupCustomers  Customer[]        @relation("BackupCarrier")
+  shipments        Shipment[]
+
+  @@map("carriers")
+}
+
+/** ขนส่งเจ้านี้ไปจังหวัดไหน + ข้อมูลสาขาปลายทาง */
+model CarrierCoverage {
+  carrierId   String
+  province    String
+  branch      String? // สาขา/ท่ารถปลายทาง
+  phone       String?
+  transitDays String? // เช่น 1-2 วัน
+  note        String?
+  createdAt   DateTime @default(now())
+
+  carrier Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+
+  @@id([carrierId, province])
+  @@index([province])
+  @@map("carrier_coverage")
+}
+
+/** บันทึกการส่งของแต่ละครั้ง */
+model Shipment {
+  id          String    @id @default(cuid())
+  customerId  String
+  dealId      String?
+  carrierId   String?
+  trackingNo  String?
+  cost        Decimal?  @db.Decimal(10, 2) // ค่าส่ง (บาท)
+  boxes       Int?
+  shippedAt   DateTime  @default(now())
+  note        String?
+  notifiedAt  DateTime? // ส่งเลขพัสดุให้ลูกค้าทาง LINE แล้ว
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  customer  Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deal      Deal?      @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  carrier   Carrier?   @relation(fields: [carrierId], references: [id], onDelete: SetNull)
+  createdBy AdminUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([customerId, shippedAt])
+  @@index([carrierId, shippedAt])
+  @@index([shippedAt])
+  @@map("shipments")
 }

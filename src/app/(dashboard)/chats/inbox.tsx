@@ -7,6 +7,7 @@ import { listQuickReplies } from "@/lib/quick-replies";
 import { canManage } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { REPLY_WINDOW_MS } from "@/lib/line-send";
+import { customerShipments, toShipmentDTO } from "@/lib/shipping";
 import { AutoRefresh } from "./auto-refresh";
 import { ChatThread } from "./chat-thread";
 import { ConversationList } from "./conversation-list";
@@ -15,13 +16,14 @@ import { CustomerPanel } from "./customer-panel";
 export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats">["searchParams"] }) {
   const user = await getCurrentUser();
   const params = parseInboxParams(await searchParams);
-  const [conversations, thread, tags, deals, owners, quickReplies] = await Promise.all([
+  const [conversations, thread, tags, deals, owners, quickReplies, shipments] = await Promise.all([
     listConversations(params),
     params.selectedId ? getThread(params.selectedId, params.limit) : null,
     params.selectedId ? listTags() : [],
     params.selectedId ? listCustomerDeals(params.selectedId) : [],
     params.selectedId ? listOwners() : [],
     params.selectedId ? listQuickReplies() : [],
+    params.selectedId ? customerShipments(params.selectedId, 3) : [],
   ]);
   const selected = Boolean(thread);
 
@@ -78,7 +80,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
             canManage={canManage(user)}
           />
           <aside className="hidden min-h-0 overflow-y-auto border-l bg-muted/20 xl:block">
-            <CustomerPanel thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />
+            <CustomerPanel shipments={shipments.map(toShipmentDTO)} thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />
           </aside>
         </>
       ) : (

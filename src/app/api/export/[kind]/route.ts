@@ -3,10 +3,11 @@ import { formatPhone } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { listStages } from "@/lib/stages";
+import { CARRIER_KINDS, PAYMENT_LABEL } from "@/lib/provinces";
 
 export const maxDuration = 60;
 
-const KINDS = ["customers", "messages", "deals"] as const;
+const KINDS = ["customers", "messages", "deals", "shipments", "carriers"] as const;
 type Kind = (typeof KINDS)[number];
 const BATCH = 1000;
 
@@ -46,11 +47,16 @@ async function* batches<T extends { id: string }>(fetch: (cursor: string | undef
 const page = (cursor: string | undefined) => ({ take: BATCH, ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}), orderBy: { id: "asc" as const } });
 
 async function* customersCsv() {
-  yield row(["รหัส", "ชื่อ", "ชื่อ LINE", "LINE User ID", "เบอร์โทร", "อีเมล", "บริษัท", "ที่อยู่", "แท็ก", "สถานะ LINE", "ผู้ดูแล", "ข้อความล่าสุด", "สร้างเมื่อ", "ลบแล้ว"]);
+  yield row(["รหัส", "ชื่อ", "ชื่อ LINE", "LINE User ID", "ประเภทแชท", "เบอร์โทร", "อีเมล", "บริษัท", "ที่อยู่", "จังหวัด", "ขนส่งหลัก", "ขนส่งสำรอง", "หมายเหตุจัดส่ง", "แท็ก", "สถานะ LINE", "ผู้ดูแล", "ข้อความล่าสุด", "สร้างเมื่อ", "ลบแล้ว"]);
   for await (const rows of batches((c) =>
     prisma.customer.findMany({
       ...page(c),
-      include: { tags: { include: { tag: { select: { name: true } } } }, assignedTo: { select: { name: true } } },
+      include: {
+        tags: { include: { tag: { select: { name: true } } } },
+        assignedTo: { select: { name: true } },
+        carrier: { select: { name: true } },
+        backupCarrier: { select: { name: true } },
+      },
     }),
   )) {
     yield rows
@@ -60,10 +66,15 @@ async function* customersCsv() {
           r.fullName,
           r.lineName,
           r.lineUserId,
+          r.chatType === "user" ? "1:1" : r.chatType === "group" ? "กลุ่ม" : "หลายคน",
           formatPhone(r.phone),
           r.email,
           r.company,
           r.address,
+          r.province,
+          r.carrier?.name,
+          r.backupCarrier?.name,
+          r.shippingNote,
           r.tags.map((t) => t.tag.name).join(", "),
           FOLLOW[r.followStatus],
           r.assignedTo?.name,
@@ -132,7 +143,60 @@ async function* dealsCsv() {
   }
 }
 
-const GENERATORS: Record<Kind, () => AsyncGenerator<string>> = { customers: customersCsv, messages: messagesCsv, deals: dealsCsv };
+async function* shipmentsCsv() {
+  yield row(["วันที่ส่ง", "ลูกค้า", "จังหวัด", "ขนส่ง", "เลขพัสดุ", "ค่าส่ง (บาท)", "จำนวนกล่อง", "ดีล", "แจ้งลูกค้าแล้ว", "หมายเหตุ", "บันทึกโดย"]);
+  for await (const rows of batches((c) =>
+    prisma.shipment.findMany({
+      ...page(c),
+      include: {
+        customer: { select: { fullName: true, lineName: true, province: true } },
+        carrier: { select: { name: true } },
+        deal: { select: { title: true } },
+        createdBy: { select: { name: true } },
+      },
+    }),
+  )) {
+    yield rows
+      .map((x) =>
+        row([
+          dt(x.shippedAt),
+          x.customer.fullName || x.customer.lineName,
+          x.customer.province,
+          x.carrier?.name,
+          x.trackingNo,
+          x.cost?.toString(),
+          x.boxes,
+          x.deal?.title,
+          x.notifiedAt ? dt(x.notifiedAt) : "",
+          x.note,
+          x.createdBy?.name,
+        ]),
+      )
+      .join("");
+  }
+}
+
+/** ขนส่ง 1 แถวต่อ 1 จังหวัดที่ไป (ขนส่งที่ยังไม่ระบุจังหวัดได้ 1 แถว) */
+async function* carriersCsv() {
+  yield row(["ขนส่ง", "ประเภท", "ใช้งานอยู่", "เบอร์โทร", "LINE", "จุดส่งของ", "ปิดรับ", "เก็บเงิน", "จังหวัด", "สาขาปลายทาง", "เบอร์สาขา", "ระยะเวลา", "หมายเหตุจังหวัด"]);
+  for await (const rows of batches((c) => prisma.carrier.findMany({ ...page(c), include: { coverage: true } }))) {
+    yield rows
+      .flatMap((x) => {
+        const base = [x.name, CARRIER_KINDS[x.kind] ?? x.kind, x.isActive ? "ใช่" : "ไม่", x.phone, x.lineId, x.dropoffAddress, x.cutoffTime, x.payment ? PAYMENT_LABEL[x.payment] : ""];
+        const cov = [...x.coverage].sort((a, b) => a.province.localeCompare(b.province, "th"));
+        return cov.length ? cov.map((v) => row([...base, v.province, v.branch, v.phone, v.transitDays, v.note])) : [row(base)];
+      })
+      .join("");
+  }
+}
+
+const GENERATORS: Record<Kind, () => AsyncGenerator<string>> = {
+  customers: customersCsv,
+  messages: messagesCsv,
+  deals: dealsCsv,
+  shipments: shipmentsCsv,
+  carriers: carriersCsv,
+};
 
 /** GET /api/export/:kind — ดาวน์โหลด CSV สำรองข้อมูล (เจ้าของ/แอดมินเท่านั้น) */
 export async function GET(_req: Request, ctx: RouteContext<"/api/export/[kind]">) {
