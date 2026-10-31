@@ -38,7 +38,19 @@ export const CARRIER_KINDS: Record<string, string> = {
 };
 export const PAYMENT_LABEL: Record<string, string> = { origin: "เก็บต้นทาง", destination: "เก็บปลายทาง", both: "ต้นทาง/ปลายทาง" };
 
+/**
+ * ขนส่งพัสดุทั่วประเทศที่ใส่ให้ตั้งแต่แรก (ผู้ใช้แก้ไข/ปิดใช้งาน/ลบได้ — สร้างครั้งเดียว)
+ * ลิงก์เช็คพัสดุใส่ {เลขพัสดุ} ได้ถ้าเว็บนั้นรองรับ ไม่งั้นลูกค้ากดลิงก์แล้วกรอกเลขเอง
+ */
+export const BUILTIN_CARRIERS = [
+  { id: "flash-express", name: "Flash Express (แฟลช)", kind: "parcel", trackingUrl: "https://www.flashexpress.co.th/fle/tracking" },
+  { id: "thailand-post-ems", name: "EMS ไปรษณีย์ไทย", kind: "post", trackingUrl: "https://track.thailandpost.co.th/" },
+];
+
 /** ลิงก์ติดตามพัสดุจาก template เช่น https://track.example.com/?no={เลขพัสดุ} */
+/** ลิงก์ใส่เลขพัสดุให้อัตโนมัติไหม (ไม่ใส่ = ลูกค้าต้องกรอกเลขเองในหน้าเว็บ) */
+export const trackingLinkPrefills = (template: string | null | undefined) => Boolean(template && /\{เลขพัสดุ\}|\{tracking\}/.test(template));
+
 export function trackingLink(template: string | null | undefined, trackingNo: string | null | undefined) {
   if (!template || !trackingNo) return null;
   const url = template.replace(/\{เลขพัสดุ\}|\{tracking\}/g, encodeURIComponent(trackingNo.trim()));

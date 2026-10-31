@@ -6,6 +6,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { prisma } from "../src/lib/prisma";
 import { DEFAULT_STAGES } from "../src/lib/deal-stages";
+import { BUILTIN_CARRIERS, PROVINCES } from "../src/lib/provinces";
 
 const TAGS = [
   { name: "VIP", color: "amber" },
@@ -156,9 +157,22 @@ async function seedDemoDeals() {
   console.log(`seed: สร้างดีลตัวอย่าง ${deals.length} รายการ`);
 }
 
+/** ใส่ขนส่งพัสดุทั่วประเทศ (แฟลช, EMS) ครั้งเดียว — ถ้าผู้ใช้ลบทิ้งภายหลังจะไม่สร้างกลับ */
+async function seedBuiltinCarriers() {
+  for (const c of BUILTIN_CARRIERS) {
+    const flag = `builtin_carrier:${c.id}`;
+    if (await prisma.appSetting.findUnique({ where: { key: flag } })) continue;
+    await prisma.carrier.upsert({ where: { id: c.id }, update: {}, create: { ...c, payment: "origin" } });
+    await prisma.carrierCoverage.createMany({ data: PROVINCES.map((province) => ({ carrierId: c.id, province })), skipDuplicates: true });
+    await prisma.appSetting.create({ data: { key: flag, value: { at: new Date().toISOString() } } });
+    console.log(`seed: เพิ่มขนส่ง ${c.name} (ทุกจังหวัด)`);
+  }
+}
+
 async function main() {
   await bootstrapAdmin();
   await ensureDealStages();
+  await seedBuiltinCarriers();
   await normalizeData();
   await seedQuickReplies();
 

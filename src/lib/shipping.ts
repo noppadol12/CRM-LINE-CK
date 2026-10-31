@@ -31,6 +31,7 @@ export async function carrierOptions() {
       id: true,
       name: true,
       isActive: true,
+      kind: true,
       trackingUrl: true,
       coverage: { select: { province: true, branch: true, phone: true } },
     },

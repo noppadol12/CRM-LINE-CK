@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { getShipmentFormData, saveShipment } from "@/actions/shipping";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { bangkokDayKey } from "@/lib/deal-stages";
-import { trackingLink } from "@/lib/provinces";
+import { trackingLink, trackingLinkPrefills } from "@/lib/provinces";
+import { cn } from "@/lib/utils";
 import { CarrierSelect, Field, selectCls } from "./fields";
 
 type FormData = Awaited<ReturnType<typeof getShipmentFormData>>;
@@ -26,13 +27,21 @@ export type EditableShipment = {
   note: string | null;
 };
 
-function buildMessage(o: { carrier?: string; trackingNo: string; boxes: string; link: string | null; branch?: string | null; branchPhone?: string | null }) {
+function buildMessage(o: {
+  carrier?: string;
+  trackingNo: string;
+  boxes: string;
+  link: string | null;
+  linkPrefilled: boolean;
+  branch?: string | null;
+  branchPhone?: string | null;
+}) {
   const lines = ["📦 แจ้งจัดส่งสินค้าครับ"];
   if (o.carrier) lines.push(`ขนส่ง: ${o.carrier}`);
   if (o.trackingNo.trim()) lines.push(`เลขพัสดุ: ${o.trackingNo.trim()}`);
   if (o.boxes.trim()) lines.push(`จำนวน: ${o.boxes.trim()} กล่อง`);
   if (o.branch) lines.push(`รับของที่: ${o.branch}${o.branchPhone ? ` โทร ${o.branchPhone}` : ""}`);
-  if (o.link) lines.push(`ติดตามพัสดุ: ${o.link}`);
+  if (o.link) lines.push(o.linkPrefilled ? `ติดตามพัสดุ: ${o.link}` : `เช็คสถานะพัสดุ (กรอกเลขพัสดุด้านบน): ${o.link}`);
   lines.push("ขอบคุณที่ใช้บริการครับ 🙏");
   return lines.join("\n");
 }
@@ -54,19 +63,20 @@ function Form({ data, dealId, shipment, onDone }: { data: FormData; dealId?: str
   const [pending, start] = useTransition();
 
   const carrier = data.carriers.find((x) => x.id === carrierId);
+  // ปุ่มลัด: ขนส่งหลัก/สำรองของลูกค้า + ขนส่งพัสดุทั่วประเทศ (แฟลช, EMS ฯลฯ)
+  const quick = data.carriers
+    .filter((x) => x.isActive && (x.id === c.carrierId || x.id === c.backupCarrierId || x.kind === "parcel" || x.kind === "post"))
+    .slice(0, 6);
   const branch = carrier && c.province ? carrier.coverage.find((x) => x.province === c.province) : undefined;
-  const auto = useMemo(
-    () =>
-      buildMessage({
-        carrier: carrier?.name,
-        trackingNo,
-        boxes,
-        link: trackingLink(carrier?.trackingUrl, trackingNo),
-        branch: branch?.branch,
-        branchPhone: branch?.phone,
-      }),
-    [carrier, trackingNo, boxes, branch],
-  );
+  const auto = buildMessage({
+    carrier: carrier?.name,
+    trackingNo,
+    boxes,
+    link: trackingLink(carrier?.trackingUrl, trackingNo),
+    linkPrefilled: trackingLinkPrefills(carrier?.trackingUrl),
+    branch: branch?.branch,
+    branchPhone: branch?.phone,
+  });
   const message = edited ?? auto;
 
   return (
@@ -96,10 +106,34 @@ function Form({ data, dealId, shipment, onDone }: { data: FormData; dealId?: str
       className="space-y-4"
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="ขนส่ง" htmlFor="s-carrier" hint={data.carriers.length === 0 ? "ยังไม่มีขนส่ง — เพิ่มได้ที่เมนูขนส่ง" : undefined}>
-          <CarrierSelect id="s-carrier" value={carrierId} onChange={setCarrierId} carriers={data.carriers} province={c.province} />
+        <Field label="ขนส่ง" htmlFor="s-carrier" className="sm:col-span-2" hint={data.carriers.length === 0 ? "ยังไม่มีขนส่ง — เพิ่มได้ที่เมนูขนส่ง" : undefined}>
+          <div className="space-y-2">
+            {/* ปุ่มลัด: ขนส่งพัสดุ/ไปรษณีย์ + ขนส่งที่ลูกค้าใช้ */}
+            <div className="flex flex-wrap gap-1.5">
+              {quick.map((q) => (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => setCarrierId(q.id)}
+                  aria-pressed={carrierId === q.id}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    carrierId === q.id ? "border-primary bg-primary-soft font-medium text-primary" : "hover:bg-accent",
+                  )}
+                >
+                  {q.name}
+                </button>
+              ))}
+            </div>
+            <CarrierSelect id="s-carrier" value={carrierId} onChange={setCarrierId} carriers={data.carriers} province={c.province} />
+            {carrier?.trackingUrl && (
+              <a href={trackingLink(carrier.trackingUrl, trackingNo) ?? carrier.trackingUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-primary hover:underline">
+                เว็บเช็คพัสดุ: {carrier.trackingUrl}
+              </a>
+            )}
+          </div>
         </Field>
-        <Field label="เลขพัสดุ" htmlFor="s-track">
+        <Field label="เลขพัสดุ" htmlFor="s-track" className="sm:col-span-2">
           <Input id="s-track" value={trackingNo} onChange={(e) => setTrackingNo(e.target.value)} placeholder="เช่น NX123456789TH" autoFocus />
         </Field>
         <Field label="ค่าส่ง (บาท)" htmlFor="s-cost">
