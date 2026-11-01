@@ -21,6 +21,7 @@ export const viewport: Viewport = {
   themeColor: "#00a24f",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover", // ใช้ env(safe-area-inset-*) กับแถบล่างเมื่อติดตั้งเป็นแอป
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -3,7 +3,9 @@
 import { Fragment, useEffect, useLayoutEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Ban, Loader2, Paperclip, SendHorizontal, UserRound, Zap } from "lucide-react";
+import { ArrowLeft, Ban, Info, Loader2, Paperclip, SendHorizontal, UserRound, Zap } from "lucide-react";
+import type { ReactNode } from "react";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { markConversationRead, sendChatAttachment, sendChatMessage } from "@/actions/chats";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -93,7 +95,10 @@ export function ChatThread({
   quickReplies,
   canManage,
   freeReplyUntil,
+  info,
 }: {
+  /** แผงข้อมูลลูกค้า (เปิดเป็นแผ่นเลื่อนบนจอเล็ก) */
+  info?: ReactNode;
   customer: ThreadCustomer;
   freeReplyUntil: number | null;
   messages: BubbleMessage[];
@@ -106,6 +111,7 @@ export function ChatThread({
   const scrollRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
   const nearBottom = useRef(true);
   const [text, setText] = useState("");
   const [sending, start] = useTransition();
@@ -226,10 +232,11 @@ export function ChatThread({
   }
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col">
+    // มือถือ: ห้องแชทเต็มจอ (ทับแถบบน/ล่าง) เหมือนแอป LINE · จอใหญ่: คอลัมน์กลาง
+    <section className="fixed inset-0 z-50 flex h-dvh min-h-0 min-w-0 flex-col bg-card lg:static lg:z-auto lg:h-auto">
       {/* ===== หัวห้อง ===== */}
-      <header className="flex items-center gap-3 border-b px-3 py-2.5 sm:px-4">
-        <Button variant="ghost" size="icon-sm" asChild className="lg:hidden">
+      <header className="flex items-center gap-2 border-b pt-safe px-2 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+        <Button variant="ghost" size="icon" asChild className="lg:hidden">
           <Link href={backHref} aria-label="กลับไปรายชื่อแชท">
             <ArrowLeft />
           </Link>
@@ -252,7 +259,21 @@ export function ChatThread({
                   : "ลูกค้า LINE"}
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild>
+        {info && (
+          <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="xl:hidden">
+                <Info />
+                <span className="hidden sm:inline">ข้อมูลลูกค้า</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" aria-describedby={undefined} className="h-[88dvh] sm:inset-x-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:w-96 sm:rounded-none sm:border-l">
+              <SheetTitle className="border-b px-5 py-3.5 text-base font-semibold">ข้อมูลลูกค้า</SheetTitle>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{info}</div>
+            </SheetContent>
+          </Sheet>
+        )}
+        <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
           <Link href={`/customers/${customer.id}`}>
             <UserRound />
             <span className="hidden sm:inline">โปรไฟล์</span>
@@ -295,7 +316,7 @@ export function ChatThread({
       </div>
 
       {/* ===== ช่องพิมพ์ ===== */}
-      <footer className="border-t bg-card p-3">
+      <footer className="border-t bg-card p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:p-3">
         {canSend ? (
           <form
             onSubmit={(e) => {

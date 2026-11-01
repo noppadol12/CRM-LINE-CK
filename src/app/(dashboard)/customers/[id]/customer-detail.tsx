@@ -90,6 +90,13 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
               )}
             </div>
           </div>
+          {c.phone && (
+            <Button asChild className="sm:hidden">
+              <a href={`tel:${c.phone}`}>
+                <Phone /> โทร {formatPhone(c.phone)}
+              </a>
+            </Button>
+          )}
           {!c.deletedAt && (
             <CustomerActions
               customer={{
@@ -262,14 +269,15 @@ function Stat({ icon: Icon, label, value }: { icon: typeof Handshake; label: str
         <Icon className="size-3.5" />
         {label}
       </span>
-      <span className="truncate text-base font-semibold sm:text-lg">{value}</span>
+      <span className="text-sm font-semibold break-words sm:truncate sm:text-lg">{value}</span>
     </div>
   );
 }
 
 function InfoRow({ icon: Icon, label, children }: { icon: typeof Phone; label: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3">
+    // มือถือ: ซ่อนช่องที่ยังไม่มีข้อมูล ให้หน้าสั้นลง
+    <div className={children ? "flex gap-3" : "hidden gap-3 sm:flex"}>
       <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted-foreground">{label}</p>

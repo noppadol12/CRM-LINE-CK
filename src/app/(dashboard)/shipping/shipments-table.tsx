@@ -83,7 +83,58 @@ export function ShipmentsTable({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      {/* มือถือ: การ์ดแทนตาราง */}
+      <ul className="divide-y rounded-xl border bg-card sm:hidden">
+        {rows.length === 0 && <li className="px-4 py-10 text-center text-sm text-muted-foreground">ยังไม่มีการบันทึกการส่งของ</li>}
+        {rows.map((s) => {
+          const link = trackingLink(s.carrier?.trackingUrl, s.trackingNo);
+          return (
+            <li key={s.id} className="flex items-start gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="flex items-center gap-2 text-sm">
+                  <Link href={`/customers/${s.customer.id}`} className="truncate font-medium">
+                    {displayName(s.customer)}
+                  </Link>
+                  {s.cost != null && <span className="ml-auto shrink-0 tabular-nums">{baht.format(s.cost)}</span>}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {dateFmt.format(s.shippedAt)} · {s.carrier?.name ?? "ไม่ระบุขนส่ง"}
+                  {s.customer.province && ` · ${s.customer.province}`}
+                </p>
+                {s.trackingNo && (
+                  <p className="flex items-center gap-1.5 text-xs">
+                    {link ? (
+                      <a href={link} target="_blank" rel="noreferrer" className="font-mono text-primary">
+                        {s.trackingNo}
+                      </a>
+                    ) : (
+                      <span className="font-mono">{s.trackingNo}</span>
+                    )}
+                    {s.notifiedAt && <Send className="size-3 text-primary" aria-label="แจ้งลูกค้าแล้ว" />}
+                  </p>
+                )}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="-mr-2" aria-label="เมนู">
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setEdit(s)}>
+                    <Pencil /> แก้ไข / ส่งเลขพัสดุ
+                  </DropdownMenuItem>
+                  <DropdownMenuItem variant="destructive" onSelect={() => setDel(s)}>
+                    <Trash2 /> ลบ
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
             <tr>

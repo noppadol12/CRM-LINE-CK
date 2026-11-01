@@ -1,22 +1,17 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BrandMark } from "./brand";
 import { SidebarNav } from "./sidebar-nav";
 
-export function MobileNav({ unreadBadge, tasksBadge }: { unreadBadge?: ReactNode; tasksBadge?: ReactNode }) {
+/** เมนูทั้งหมดแบบแผ่นเลื่อนจากซ้าย (มือถือ) — ปุ่มเปิดอยู่ที่แถบล่าง */
+export function MobileNav({ unreadBadge, tasksBadge, trigger }: { unreadBadge?: ReactNode; tasksBadge?: ReactNode; trigger: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden" aria-label="เปิดเมนู">
-          <Menu className="size-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" aria-describedby={undefined}>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      <SheetContent side="left" aria-describedby={undefined} className="pt-safe">
         <SheetTitle className="sr-only">เมนู</SheetTitle>
         <div className="flex h-16 items-center px-5">
           <BrandMark />

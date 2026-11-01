@@ -81,3 +81,29 @@
     font-feature-settings: "tnum" 1;
   }
 }
+
+/* ---------- มือถือ ---------- */
+@layer base {
+  /* ลูกของ grid ไม่ดันความกว้างหน้า (ข้อความยาว ๆ ทำให้เลื่อนซ้ายขวาได้) */
+  .grid > * {
+    min-width: 0;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* iOS ซูมหน้าเมื่อแตะช่องกรอกที่ตัวอักษรเล็กกว่า 16px */
+  @media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}

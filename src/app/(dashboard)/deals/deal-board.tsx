@@ -116,13 +116,33 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
         </select>
       </div>
 
-      <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      {/* มือถือ: แตะชื่อขั้นเพื่อเลื่อนไปคอลัมน์นั้น */}
+      <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:hidden">
+        {stages.map((s) => {
+          const n = board.filter((d) => d.stage === s.id).length;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => document.getElementById(`stage-${s.id}`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" })}
+              className="flex shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs"
+            >
+              <span className={cn("size-2 rounded-full", stageStyle(s.color).dot)} />
+              {s.name}
+              <span className="text-muted-foreground">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:snap-proximity sm:px-6 lg:-mx-8 lg:px-8">
         {stages.map((stage) => {
           const items = board.filter((d) => d.stage === stage.id);
           const total = items.reduce((s, d) => s + (d.amount ?? 0), 0);
           return (
             <section
               key={stage.id}
+              id={`stage-${stage.id}`}
               onDragOver={(e) => {
                 e.preventDefault();
                 setDragOver(stage.id);
@@ -136,7 +156,7 @@ export function DealBoard({ deals, owners, canManage }: { deals: DealDTO[]; owne
                 if (deal && deal.stage !== stage.id) move(id, stage.id);
               }}
               className={cn(
-                "flex w-72 shrink-0 snap-start flex-col rounded-xl border bg-muted/40 transition-colors",
+                "flex w-[82vw] max-w-80 shrink-0 snap-center flex-col rounded-xl border bg-muted/40 transition-colors sm:w-72 sm:snap-start",
                 dragOver === stage.id && "border-primary bg-primary-soft/60",
               )}
             >

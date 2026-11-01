@@ -32,7 +32,8 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
   return (
     <div
       className={cn(
-        "grid h-[calc(100svh-6rem)] overflow-hidden rounded-xl border bg-card shadow-xs sm:h-[calc(100svh-7rem)] lg:h-[calc(100svh-8rem)]",
+        // มือถือ: รายชื่อแชทเลื่อนไปกับหน้า · จอใหญ่: สูงพอดีจอ แบ่งคอลัมน์
+        "-mx-4 -mt-4 grid border-b bg-card sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-xl sm:border sm:shadow-xs lg:h-[calc(100svh-8rem)]",
         "lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px]",
       )}
     >
@@ -80,6 +81,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
             limit={params.limit}
             quickReplies={quickReplies}
             canManage={canManage(user)}
+            info={<CustomerPanel tasks={tasks.map(toTaskDTO)} shipments={shipments.map(toShipmentDTO)} thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />}
           />
           <aside className="hidden min-h-0 overflow-y-auto border-l bg-muted/20 xl:block">
             <CustomerPanel tasks={tasks.map(toTaskDTO)} shipments={shipments.map(toShipmentDTO)} thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />

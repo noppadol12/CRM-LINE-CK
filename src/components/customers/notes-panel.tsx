@@ -56,8 +56,8 @@ export function NotesPanel({
             rows={2}
             maxLength={2000}
           />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Ctrl + Enter เพื่อบันทึก</span>
+          <div className="flex items-center justify-end sm:justify-between">
+            <span className="hidden text-xs text-muted-foreground sm:inline">Ctrl + Enter เพื่อบันทึก</span>
             <Button size="sm" onClick={submit} disabled={pending || !text.trim()}>
               {pending && <Loader2 className="animate-spin" />}
               บันทึกโน้ต
