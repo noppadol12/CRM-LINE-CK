@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn, initials } from "@/lib/utils";
 
 type Props = { name: string; email: string; role: string; compact?: boolean };
@@ -43,6 +44,10 @@ export function UserMenuClient({ name, email, role, compact }: Props) {
           <span className="block font-medium">{name}</span>
           <span className="block truncate text-xs font-normal text-muted-foreground">{email}</span>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <div className="px-1.5 py-1">
+          <ThemeToggle size="sm" />
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/settings">

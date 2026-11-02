@@ -3,6 +3,7 @@ import Form from "next/form";
 import { Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
+import { ThemeIconButton } from "@/components/theme-toggle";
 import { UserMenu } from "./user-menu";
 
 export function Topbar() {
@@ -23,10 +24,13 @@ export function Topbar() {
         />
       </Form>
 
-      <div className="ml-auto lg:hidden">
-        <Suspense fallback={<Skeleton className="size-9 rounded-full" />}>
-          <UserMenu compact />
-        </Suspense>
+      <div className="ml-auto flex items-center gap-1">
+        <ThemeIconButton />
+        <div className="lg:hidden">
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}>
+            <UserMenu compact />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

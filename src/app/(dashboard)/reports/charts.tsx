@@ -5,9 +5,10 @@ import { baht, bahtCompact } from "@/lib/deal-stages";
 import { thNumber } from "@/lib/utils";
 
 /** สีแท่งเดียวทั้งหน้า — เขียวของแบรนด์ (#00a24f, คอนทราสต์ 3.3:1 บนพื้นขาว) ชื่อหมวดอยู่บนแกนแล้ว */
-const BAR = "#00a24f";
-const GRID = "#e8e8ec";
-const AXIS = "#6b6b76";
+const BAR = "var(--chart-bar)";
+const GRID = "var(--chart-grid)";
+const AXIS = "var(--chart-axis)";
+const LABEL = "var(--chart-label)";
 const monthFmt = new Intl.DateTimeFormat("th-TH", { month: "short", year: "2-digit", timeZone: "UTC" });
 const dayFmt = new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", timeZone: "UTC" });
 
@@ -56,7 +57,7 @@ export function MonthlyWonChart({ data }: { data: { month: string; amount: numbe
               const { x, y, width, value } = props as { x: number; y: number; width: number; value: number };
               if (!value || value !== max) return null;
               return (
-                <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={11} fill="#3f3f46">
+                <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={11} fill={LABEL}>
                   {bahtCompact.format(value)}
                 </text>
               );
@@ -99,7 +100,7 @@ export function HorizontalBars({
           }}
         />
         <Bar dataKey="value" fill={BAR} radius={[0, 4, 4, 0]} maxBarSize={22} minPointSize={2}>
-          <LabelList dataKey="value" position="right" formatter={(v) => format(Number(v))} style={{ fontSize: 12, fill: "#3f3f46" }} />
+          <LabelList dataKey="value" position="right" formatter={(v) => format(Number(v))} style={{ fontSize: 12, fill: LABEL }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

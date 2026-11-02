@@ -30,7 +30,7 @@ export function TagChip({
           type="button"
           onClick={onRemove}
           aria-label={`เอาแท็ก ${name} ออก`}
-          className="rounded-full p-0.5 opacity-60 transition-opacity hover:bg-black/5 hover:opacity-100"
+          className="rounded-full p-0.5 opacity-60 transition-opacity hover:bg-foreground/10 hover:opacity-100"
         >
           <X className="size-3" />
         </button>

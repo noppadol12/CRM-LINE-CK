@@ -13,6 +13,7 @@ import { listQuickReplies } from "@/lib/quick-replies";
 import { TagsManager } from "./tags-manager";
 import { DemoData } from "./demo-data";
 import { DeviceSettings } from "./device-settings";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DriveResultToast } from "./drive-actions";
@@ -54,10 +55,14 @@ export default function SettingsPage() {
           </Suspense>
           <Card id="device" className="scroll-mt-24">
             <CardHeader>
-              <CardTitle>แจ้งเตือนและแอปมือถือ</CardTitle>
-              <CardDescription>ตั้งค่าแยกแต่ละเครื่อง (มือถือ / คอมพิวเตอร์) ที่คุณใช้</CardDescription>
+              <CardTitle>เครื่องนี้</CardTitle>
+              <CardDescription>ธีม แจ้งเตือน และแอปมือถือ — ตั้งค่าแยกแต่ละเครื่องที่คุณใช้</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">ธีม</p>
+                <ThemeToggle />
+              </div>
               <DeviceSettings />
             </CardContent>
           </Card>

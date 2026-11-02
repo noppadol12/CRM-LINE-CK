@@ -68,7 +68,7 @@ export function RestoreBanner({ id, canManage, deletedAt }: { id: string; canMan
         <Button
           size="sm"
           variant="outline"
-          className="bg-white"
+          className="bg-card"
           onClick={async () => {
             const r = await restoreCustomer(id);
             if (r.ok) toast.success(r.message);

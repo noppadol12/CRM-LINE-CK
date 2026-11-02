@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* ธีมมืด: ใส่คลาส .dark ที่ <html> (ตั้งจากสคริปต์ใน layout ก่อนหน้าโหลด) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    CK CRM theme — shadcn/ui tokens
    เปลี่ยนสีหลักของแบรนด์ได้ที่ --primary ที่เดียว
@@ -37,6 +40,120 @@
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.37 0.02 257);
   --sidebar-border: oklch(0.93 0.005 255);
+
+  /* กราฟรายงาน */
+  --chart-bar: #00a24f;
+  --chart-grid: #e8e8ec;
+  --chart-axis: #6b6b76;
+  --chart-label: #3f3f46;
+
+  color-scheme: light;
+}
+
+/* ---------- ธีมมืด ---------- */
+.dark {
+  --background: oklch(0.17 0.012 260);
+  --foreground: oklch(0.94 0.006 260);
+
+  --card: oklch(0.21 0.014 260);
+  --popover: oklch(0.23 0.014 260);
+
+  --primary: oklch(0.68 0.16 152);
+  --primary-foreground: oklch(0.16 0.03 152);
+  --primary-soft: oklch(0.3 0.06 152);
+  --primary-soft-foreground: oklch(0.86 0.1 152);
+
+  --secondary: oklch(0.27 0.014 260);
+  --secondary-foreground: oklch(0.9 0.008 260);
+  --muted: oklch(0.26 0.013 260);
+  --muted-foreground: oklch(0.7 0.016 260);
+  --accent: oklch(0.28 0.015 260);
+  --accent-foreground: oklch(0.94 0.006 260);
+  --destructive: oklch(0.65 0.2 25);
+
+  --border: oklch(0.3 0.014 260);
+  --input: oklch(0.34 0.015 260);
+  --ring: oklch(0.68 0.16 152);
+
+  --sidebar: oklch(0.19 0.013 260);
+  --sidebar-foreground: oklch(0.8 0.012 260);
+  --sidebar-border: oklch(0.28 0.014 260);
+
+  --chart-bar: #22b866;
+  --chart-grid: #33343d;
+  --chart-axis: #a1a1aa;
+  --chart-label: #e4e4e7;
+
+  color-scheme: dark;
+
+  /*
+   * สีป้าย/แจ้งเตือนที่ใช้โทนอ่อน (bg-*-50, text-*-700 ฯลฯ) — สลับเป็นโทนเข้ม
+   * ในโหมดมืดให้อัตโนมัติ ไม่ต้องใส่ dark: ทุกจุด (500 = สีจุด/ปุ่ม คงเดิม)
+   */
+  --color-slate-50: oklch(0.27 0.012 257);
+  --color-slate-100: oklch(0.3 0.014 257);
+  --color-slate-200: oklch(0.37 0.016 257);
+  --color-slate-300: oklch(0.45 0.018 257);
+  --color-slate-600: oklch(0.76 0.016 257);
+  --color-slate-700: oklch(0.82 0.014 257);
+  --color-slate-800: oklch(0.87 0.01 257);
+  --color-slate-900: oklch(0.92 0.008 257);
+  --color-amber-50: oklch(0.27 0.05 70);
+  --color-amber-100: oklch(0.3 0.06 70);
+  --color-amber-200: oklch(0.38 0.08 70);
+  --color-amber-300: oklch(0.46 0.1 70);
+  --color-amber-600: oklch(0.76 0.14 70);
+  --color-amber-700: oklch(0.8 0.12 70);
+  --color-amber-800: oklch(0.85 0.1 70);
+  --color-amber-900: oklch(0.9 0.07 70);
+  --color-orange-50: oklch(0.27 0.05 47);
+  --color-orange-100: oklch(0.3 0.06 47);
+  --color-orange-200: oklch(0.38 0.08 47);
+  --color-orange-300: oklch(0.46 0.1 47);
+  --color-orange-600: oklch(0.76 0.14 47);
+  --color-orange-700: oklch(0.8 0.12 47);
+  --color-orange-800: oklch(0.85 0.1 47);
+  --color-orange-900: oklch(0.9 0.07 47);
+  --color-rose-50: oklch(0.27 0.05 16);
+  --color-rose-100: oklch(0.3 0.06 16);
+  --color-rose-200: oklch(0.38 0.08 16);
+  --color-rose-300: oklch(0.46 0.1 16);
+  --color-rose-600: oklch(0.76 0.14 16);
+  --color-rose-700: oklch(0.8 0.12 16);
+  --color-rose-800: oklch(0.85 0.1 16);
+  --color-rose-900: oklch(0.9 0.07 16);
+  --color-emerald-50: oklch(0.27 0.05 163);
+  --color-emerald-100: oklch(0.3 0.06 163);
+  --color-emerald-200: oklch(0.38 0.08 163);
+  --color-emerald-300: oklch(0.46 0.1 163);
+  --color-emerald-600: oklch(0.76 0.14 163);
+  --color-emerald-700: oklch(0.8 0.12 163);
+  --color-emerald-800: oklch(0.85 0.1 163);
+  --color-emerald-900: oklch(0.9 0.07 163);
+  --color-teal-50: oklch(0.27 0.045 182);
+  --color-teal-100: oklch(0.3 0.054 182);
+  --color-teal-200: oklch(0.38 0.072 182);
+  --color-teal-300: oklch(0.46 0.09 182);
+  --color-teal-600: oklch(0.76 0.126 182);
+  --color-teal-700: oklch(0.8 0.108 182);
+  --color-teal-800: oklch(0.85 0.09 182);
+  --color-teal-900: oklch(0.9 0.063 182);
+  --color-sky-50: oklch(0.27 0.045 237);
+  --color-sky-100: oklch(0.3 0.054 237);
+  --color-sky-200: oklch(0.38 0.072 237);
+  --color-sky-300: oklch(0.46 0.09 237);
+  --color-sky-600: oklch(0.76 0.126 237);
+  --color-sky-700: oklch(0.8 0.108 237);
+  --color-sky-800: oklch(0.85 0.09 237);
+  --color-sky-900: oklch(0.9 0.063 237);
+  --color-violet-50: oklch(0.27 0.05 293);
+  --color-violet-100: oklch(0.3 0.06 293);
+  --color-violet-200: oklch(0.38 0.08 293);
+  --color-violet-300: oklch(0.46 0.1 293);
+  --color-violet-600: oklch(0.76 0.14 293);
+  --color-violet-700: oklch(0.8 0.12 293);
+  --color-violet-800: oklch(0.85 0.1 293);
+  --color-violet-900: oklch(0.9 0.07 293);
 }
 
 @theme inline {
