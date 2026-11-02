@@ -9,8 +9,10 @@ import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
 import { tagColor } from "@/lib/tag-colors";
 import { cn, initials } from "@/lib/utils";
+import { TagPicker, type TagOption } from "./tag-picker";
 
-type TagOption = { id: string; name: string; color: string; count: number };
+/** จำนวนชิปแท็กที่แสดงในแถว — ที่เหลือเลือกจากรายการ */
+const MAX_CHIPS = 6;
 
 export function ConversationList({
   conversations,
@@ -33,6 +35,12 @@ export function ConversationList({
     const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
     return hrefWith({ t: next.join(",") || null, c: null, n: null });
   };
+
+  // ชิปที่โชว์: แท็กที่เลือกไว้ก่อน แล้วตามด้วยแท็กที่มีลูกค้ามากสุด
+  const chipTags = [...tags]
+    .sort((a, b) => Number(picked.includes(b.id)) - Number(picked.includes(a.id)) || b.count - a.count || a.name.localeCompare(b.name, "th"))
+    .slice(0, Math.max(MAX_CHIPS, picked.length));
+  const hiddenCount = tags.length - chipTags.length;
 
   const hrefWith = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
@@ -101,7 +109,7 @@ export function ConversationList({
                 <X className="size-3" /> ล้าง
               </Link>
             )}
-            {[...tags].sort((a, b) => Number(picked.includes(b.id)) - Number(picked.includes(a.id))).map((t) => {
+            {chipTags.map((t) => {
               const on = picked.includes(t.id);
               return (
                 <Link
@@ -121,6 +129,14 @@ export function ConversationList({
                 </Link>
               );
             })}
+            {tags.length > MAX_CHIPS && (
+              <TagPicker
+                tags={tags}
+                picked={picked}
+                hidden={hiddenCount}
+                onApply={(ids) => start(() => router.replace(hrefWith({ t: ids.join(",") || null, c: null, n: null }), { scroll: false }))}
+              />
+            )}
           </div>
         )}
       </div>
