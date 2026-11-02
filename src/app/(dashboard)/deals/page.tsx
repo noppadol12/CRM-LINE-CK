@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
-import { listBoardDeals, listOwners, parseDealParams } from "@/lib/deals";
+import { listBoard, listOwners, parseDealParams } from "@/lib/deals";
 import { canManage } from "@/lib/permissions";
 import { DealBoard } from "./deal-board";
 import { StagesProvider } from "@/components/deals/stages-context";
@@ -21,10 +21,11 @@ export default function DealsPage({ searchParams }: PageProps<"/deals">) {
 async function DealsSection({ searchParams }: { searchParams: PageProps<"/deals">["searchParams"] }) {
   const user = await getCurrentUser();
   const params = parseDealParams(await searchParams);
-  const [deals, owners, stages] = await Promise.all([listBoardDeals({ ...params, userId: user.id }), listOwners(), listStages()]);
+  const [stages, owners] = await Promise.all([listStages(), listOwners()]);
+  const { deals, summary } = await listBoard({ ...params, userId: user.id }, stages.map((s) => s.id));
   return (
     <StagesProvider stages={stages}>
-      <DealBoard deals={deals} owners={owners} canManage={canManage(user)} />
+      <DealBoard key={JSON.stringify(params)} deals={deals} summary={summary} owners={owners} canManage={canManage(user)} />
     </StagesProvider>
   );
 }

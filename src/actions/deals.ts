@@ -8,6 +8,7 @@ import { listStages } from "@/lib/stages";
 import { displayName } from "@/lib/format";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { listStageDeals, parseDealParams } from "@/lib/deals";
 
 
 const opt = (max: number) =>
@@ -190,4 +191,11 @@ export async function searchCustomers(q: string) {
     select: { id: true, fullName: true, lineName: true, lineUserId: true, company: true },
   });
   return rows.map((c) => ({ id: c.id, name: displayName(c), company: c.company }));
+}
+
+/** บอร์ดดีล: โหลดการ์ดเพิ่มของขั้นหนึ่ง (ปุ่ม "ดูเพิ่ม") */
+export async function loadMoreDeals(stage: string, offset: number, params: Record<string, string>) {
+  const user = await getCurrentUser();
+  const f = parseDealParams(params);
+  return listStageDeals({ ...f, userId: user.id }, String(stage), Math.max(0, Math.floor(Number(offset) || 0)));
 }

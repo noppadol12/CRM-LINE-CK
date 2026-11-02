@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { AlarmClock, ArrowRightLeft, CalendarClock, FileText, MessagesSquare, MoreHorizontal, Pencil, Trash2, Truck } from "lucide-react";
+import { AlarmClock, ArrowRightLeft, Hourglass, CalendarClock, FileText, MessagesSquare, MoreHorizontal, Pencil, Trash2, Truck } from "lucide-react";
 import { ShipmentDialog } from "@/components/shipping/shipment-dialog";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { LOST, baht, findStage, followUpState, isClosedStage, stageStyle } from "@/lib/deal-stages";
+import { LOST, baht, findStage, followUpState, isClosedStage, staleDays, stageStyle } from "@/lib/deal-stages";
 import { useStages } from "./stages-context";
 import type { DealDTO } from "@/lib/deals";
 import { displayName } from "@/lib/format";
@@ -94,6 +94,21 @@ export function LostReasonDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** ป้าย "ค้าง N วัน" เมื่ออยู่ขั้นเดิมนานเกินกำหนด */
+export function StaleBadge({ stage, since }: { stage: string; since: Date }) {
+  const days = staleDays(stage, since);
+  if (!days) return null;
+  return (
+    <span
+      title={`อยู่ขั้นนี้มา ${days} วันแล้ว — ติดตามต่อหรือปิดดีล`}
+      className="inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[11px] font-medium text-orange-700"
+    >
+      <Hourglass className="size-3" />
+      ค้าง {days} วัน
+    </span>
   );
 }
 
@@ -209,6 +224,7 @@ export function DealCard({
           <span className={cn("rounded px-1.5 py-0.5 text-[11px] font-medium", stageStyle(current.color).chip)}>{current.name}</span>
         )}
         <FollowUpBadge date={deal.nextFollowUpAt} closed={closed} />
+        <StaleBadge stage={deal.stage} since={deal.stageChangedAt} />
         {deal.quoteNo && (
           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <FileText className="size-3" />

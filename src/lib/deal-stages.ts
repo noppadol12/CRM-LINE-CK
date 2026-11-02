@@ -42,3 +42,23 @@ export function followUpState(date: Date): "overdue" | "today" | "upcoming" {
   const key = bangkokDayKey(date);
   return key < today ? "overdue" : key === today ? "today" : "upcoming";
 }
+
+/** ดีลที่อยู่ขั้นเดิมนานเกินนี้ถือว่า "ค้างนาน" */
+export const STALE_DAYS = 14;
+export function staleDays(stage: string, stageChangedAt: Date | string, now = Date.now()) {
+  if (isClosedStage(stage)) return 0;
+  const days = Math.floor((now - new Date(stageChangedAt).getTime()) / 86_400_000);
+  return days >= STALE_DAYS ? days : 0;
+}
+
+/** ช่วงเวลาที่คอลัมน์ "ปิดแล้ว" แสดง */
+export const CLOSED_RANGES = [
+  { value: "7", label: "7 วัน" },
+  { value: "30", label: "30 วัน" },
+  { value: "90", label: "90 วัน" },
+  { value: "all", label: "ทั้งหมด" },
+] as const;
+export type ClosedRange = (typeof CLOSED_RANGES)[number]["value"];
+export const DEFAULT_CLOSED_RANGE: ClosedRange = "30";
+/** การ์ดต่อคอลัมน์ต่อการโหลดหนึ่งครั้ง */
+export const BOARD_PAGE_SIZE = 50;
