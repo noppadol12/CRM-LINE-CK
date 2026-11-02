@@ -3,20 +3,36 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ban, Loader2, Search, Users } from "lucide-react";
+import { Ban, Loader2, Search, Tag, Users, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
 import { tagColor } from "@/lib/tag-colors";
 import { cn, initials } from "@/lib/utils";
 
-export function ConversationList({ conversations, selectedId }: { conversations: Conversation[]; selectedId: string | null }) {
+type TagOption = { id: string; name: string; color: string; count: number };
+
+export function ConversationList({
+  conversations,
+  selectedId,
+  tags,
+}: {
+  conversations: Conversation[];
+  selectedId: string | null;
+  tags: TagOption[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, start] = useTransition();
   const [q, setQ] = useState(params.get("q") ?? "");
   const filter = params.get("f") === "unread" ? "unread" : "all";
+  const picked = (params.get("t") ?? "").split(",").filter(Boolean);
+  /** เลือก/เลิกเลือกแท็ก (เลือกได้หลายแท็ก = ห้องที่มีแท็กใดแท็กหนึ่ง) */
+  const tagHref = (id: string) => {
+    const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
+    return hrefWith({ t: next.join(",") || null, c: null, n: null });
+  };
 
   const hrefWith = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
@@ -70,18 +86,55 @@ export function ConversationList({ conversations, selectedId }: { conversations:
             </Link>
           ))}
         </div>
+        {tags.length > 0 && (
+          <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5" aria-label="กรองตามแท็ก">
+            <span className="flex shrink-0 items-center text-muted-foreground" title="กรองตามแท็ก">
+              <Tag className="size-3.5" />
+            </span>
+            {picked.length > 0 && (
+              <Link
+                href={hrefWith({ t: null, c: null, n: null })}
+                replace
+                scroll={false}
+                className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+              >
+                <X className="size-3" /> ล้าง
+              </Link>
+            )}
+            {[...tags].sort((a, b) => Number(picked.includes(b.id)) - Number(picked.includes(a.id))).map((t) => {
+              const on = picked.includes(t.id);
+              return (
+                <Link
+                  key={t.id}
+                  href={tagHref(t.id)}
+                  replace
+                  scroll={false}
+                  aria-pressed={on}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    on ? "border-primary bg-primary-soft font-medium text-primary" : "hover:bg-accent",
+                  )}
+                >
+                  <span className={cn("size-2 rounded-full", tagColor(t.color).dot)} />
+                  {t.name}
+                  <span className={on ? "text-primary/70" : "text-muted-foreground"}>{t.count}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {conversations.length === 0 && (
           <li className="px-4 py-12 text-center text-sm text-muted-foreground">
-            {filter === "unread" ? "ตอบครบทุกห้องแล้ว 🎉" : q ? "ไม่พบห้องแชท" : "ยังไม่มีแชท"}
+            {picked.length ? "ไม่มีห้องแชทที่ติดแท็กนี้" : filter === "unread" ? "ตอบครบทุกห้องแล้ว 🎉" : q ? "ไม่พบห้องแชท" : "ยังไม่มีแชท"}
           </li>
         )}
         {conversations.map((c) => {
           const name = displayName(c);
           const active = c.id === selectedId;
-          const tag = c.tags[0]?.tag;
+          const rowTags = c.tags.map((x) => x.tag);
           return (
             <li key={c.id}>
               <Link
@@ -120,7 +173,14 @@ export function ConversationList({ conversations, selectedId }: { conversations:
                     <p className={cn("min-w-0 flex-1 truncate text-xs", c.unreadCount > 0 ? "text-foreground" : "text-muted-foreground")}>
                       {c.lastMessagePreview}
                     </p>
-                    {tag && <span className={cn("size-1.5 shrink-0 rounded-full", tagColor(tag.color).dot)} title={tag.name} />}
+                    {rowTags.map((t) => (
+                      <span key={t.name} className={cn("hidden shrink-0 rounded px-1.5 py-px text-[10px] sm:inline", tagColor(t.color).chip)}>
+                        {t.name}
+                      </span>
+                    ))}
+                    {rowTags.map((t) => (
+                      <span key={`d-${t.name}`} className={cn("size-1.5 shrink-0 rounded-full sm:hidden", tagColor(t.color).dot)} title={t.name} />
+                    ))}
                     {c.unreadCount > 0 && (
                       <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
                         {c.unreadCount > 99 ? "99+" : c.unreadCount}

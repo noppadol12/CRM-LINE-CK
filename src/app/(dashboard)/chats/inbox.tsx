@@ -20,7 +20,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
   const [conversations, thread, tags, deals, owners, quickReplies, shipments, tasks] = await Promise.all([
     listConversations(params),
     params.selectedId ? getThread(params.selectedId, params.limit) : null,
-    params.selectedId ? listTags() : [],
+    listTags(),
     params.selectedId ? listCustomerDeals(params.selectedId) : [],
     params.selectedId ? listOwners() : [],
     params.selectedId ? listQuickReplies() : [],
@@ -41,7 +41,11 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
 
       {/* รายชื่อห้องแชท — บนมือถือซ่อนเมื่อเปิดห้อง */}
       <aside className={cn("flex min-h-0 flex-col border-r", selected && "hidden lg:flex")}>
-        <ConversationList conversations={conversations} selectedId={params.selectedId} />
+        <ConversationList
+          conversations={conversations}
+          selectedId={params.selectedId}
+          tags={tags.map((t) => ({ id: t.id, name: t.name, color: t.color, count: t._count.customers }))}
+        />
       </aside>
 
       {thread ? (

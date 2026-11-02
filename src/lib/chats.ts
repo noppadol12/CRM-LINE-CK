@@ -11,13 +11,20 @@ export function parseInboxParams(sp: Record<string, string | string[] | undefine
     selectedId: one("c") || null,
     q: one("q")?.trim().slice(0, 100) || undefined,
     filter: (one("f") === "unread" ? "unread" : "all") as InboxFilter,
+    // แท็กที่เลือก (คั่นด้วย , — ห้องที่มีแท็กใดแท็กหนึ่ง)
+    tagIds: (one("t") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 20),
     limit: Number.isFinite(n) ? Math.min(Math.max(50, Math.floor(n)), 500) : 50,
   };
 }
 
-export async function listConversations({ q, filter }: { q?: string; filter: InboxFilter }) {
+export async function listConversations({ q, filter, tagIds = [] }: { q?: string; filter: InboxFilter; tagIds?: string[] }) {
   const and: Prisma.CustomerWhereInput[] = [{ deletedAt: null }, { lastMessageAt: { not: null } }];
   if (filter === "unread") and.push({ unreadCount: { gt: 0 } });
+  if (tagIds.length) and.push({ tags: { some: { tagId: { in: tagIds } } } });
   if (q) {
     const or: Prisma.CustomerWhereInput[] = [
       { fullName: { contains: q, mode: "insensitive" } },
@@ -45,7 +52,7 @@ export async function listConversations({ q, filter }: { q?: string; filter: Inb
       lastMessagePreview: true,
       unreadCount: true,
       followStatus: true,
-      tags: { select: { tag: { select: { name: true, color: true } } }, take: 1, orderBy: { assignedAt: "asc" } },
+      tags: { select: { tag: { select: { name: true, color: true } } }, take: 2, orderBy: { assignedAt: "asc" } },
     },
   });
 }
