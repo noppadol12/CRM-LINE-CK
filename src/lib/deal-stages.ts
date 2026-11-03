@@ -61,4 +61,4 @@ export const CLOSED_RANGES = [
 export type ClosedRange = (typeof CLOSED_RANGES)[number]["value"];
 export const DEFAULT_CLOSED_RANGE: ClosedRange = "30";
 /** การ์ดต่อคอลัมน์ต่อการโหลดหนึ่งครั้ง */
-export const BOARD_PAGE_SIZE = 50;
+export const BOARD_PAGE_SIZE = 10;
