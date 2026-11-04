@@ -18,6 +18,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DriveResultToast } from "./drive-actions";
 import { DriveStorage } from "./drive-storage";
+import { DatabaseUsage } from "./database-usage";
 import { TeamManager } from "./team-manager";
 import { StagesManager } from "./stages-manager";
 import { listStages } from "@/lib/stages";
@@ -71,6 +72,9 @@ export default function SettingsPage() {
           </Suspense>
           <Suspense fallback={<Skeleton className="h-72 rounded-xl" />}>
             <DriveStorage />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
+            <DatabaseUsage />
           </Suspense>
           <Suspense fallback={null}>
             <BackupSection />

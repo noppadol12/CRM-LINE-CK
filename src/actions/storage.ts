@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { disconnectDrive as disconnect, getDriveConnection } from "@/lib/google-drive";
 import { savePendingMedia } from "@/lib/media";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
+import { setSetting } from "@/lib/settings";
 
 export async function disconnectGoogleDrive(): Promise<ActionResult> {
   if (!(await requireManager())) return NO_PERMISSION;
@@ -27,4 +28,13 @@ export async function syncPendingMedia(): Promise<ActionResult> {
   if (problems) parts.push(`ไม่สำเร็จ/หมดอายุ ${problems}`);
   if (remaining > 0) parts.push(`เหลืออีก ${remaining} — กดอีกครั้งเพื่อทำต่อ`);
   return { ok: true, message: saved || problems || remaining ? parts.join(" · ") : "ไม่มีไฟล์ค้าง" };
+}
+
+/** ตั้งแพ็กเกจ Supabase ที่ใช้อยู่ (ใช้คำนวณพื้นที่คงเหลือ) */
+export async function setDbPlan(plan: string): Promise<ActionResult> {
+  if (!(await requireManager())) return NO_PERMISSION;
+  if (plan !== "free" && plan !== "pro") return { ok: false, error: "แพ็กเกจไม่ถูกต้อง" };
+  await setSetting("db_plan", { plan });
+  refresh();
+  return { ok: true, message: `ตั้งเป็นแพ็กเกจ ${plan === "pro" ? "Pro" : "Free"} แล้ว` };
 }
