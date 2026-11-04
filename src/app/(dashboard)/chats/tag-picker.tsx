@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, ListFilter, Search } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { tagColor } from "@/lib/tag-colors";
@@ -9,17 +9,16 @@ import { cn } from "@/lib/utils";
 
 export type TagOption = { id: string; name: string; color: string; count: number };
 
-/** รายการแท็กทั้งหมดแบบค้นหาได้ — ใช้เมื่อแท็กเยอะเกินแถวชิป */
+/** รายการแท็กทั้งหมดแบบค้นหาได้ เลือกได้หลายแท็ก */
 export function TagPicker({
   tags,
   picked,
-  hidden,
+  trigger,
   onApply,
 }: {
   tags: TagOption[];
   picked: string[];
-  /** จำนวนแท็กที่ไม่ได้แสดงในแถวชิป */
-  hidden: number;
+  trigger: ReactNode;
   onApply: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -40,16 +39,14 @@ export function TagPicker({
         }
       }}
     >
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="flex shrink-0 items-center gap-1 rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <ListFilter className="size-3" />
-          {hidden > 0 ? `อีก ${hidden} แท็ก` : "ทุกแท็ก"}
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent
+        className="max-w-sm"
+        // มือถือ: ไม่เด้งคีย์บอร์ดขึ้นมาบังรายการทันทีที่เปิด
+        onOpenAutoFocus={(e) => {
+          if (window.matchMedia("(pointer: coarse)").matches) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>กรองแชทตามแท็ก</DialogTitle>
           <DialogDescription>เลือกได้หลายแท็ก — แสดงห้องที่ติดแท็กใดแท็กหนึ่ง</DialogDescription>

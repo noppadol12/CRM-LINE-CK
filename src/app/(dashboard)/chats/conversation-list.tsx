@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ban, Loader2, Search, Tag, Users, X } from "lucide-react";
+import { Ban, ChevronDown, Loader2, Search, Tag, Users, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
@@ -11,8 +11,6 @@ import { tagColor } from "@/lib/tag-colors";
 import { cn, initials } from "@/lib/utils";
 import { TagPicker, type TagOption } from "./tag-picker";
 
-/** จำนวนชิปแท็กที่แสดงในแถว — ที่เหลือเลือกจากรายการ */
-const MAX_CHIPS = 6;
 
 export function ConversationList({
   conversations,
@@ -30,17 +28,9 @@ export function ConversationList({
   const [q, setQ] = useState(params.get("q") ?? "");
   const filter = params.get("f") === "unread" ? "unread" : "all";
   const picked = (params.get("t") ?? "").split(",").filter(Boolean);
-  /** เลือก/เลิกเลือกแท็ก (เลือกได้หลายแท็ก = ห้องที่มีแท็กใดแท็กหนึ่ง) */
-  const tagHref = (id: string) => {
-    const next = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
-    return hrefWith({ t: next.join(",") || null, c: null, n: null });
-  };
-
-  // ชิปที่โชว์: แท็กที่เลือกไว้ก่อน แล้วตามด้วยแท็กที่มีลูกค้ามากสุด
-  const chipTags = [...tags]
-    .sort((a, b) => Number(picked.includes(b.id)) - Number(picked.includes(a.id)) || b.count - a.count || a.name.localeCompare(b.name, "th"))
-    .slice(0, Math.max(MAX_CHIPS, picked.length));
-  const hiddenCount = tags.length - chipTags.length;
+  const pickedTags = tags.filter((t) => picked.includes(t.id));
+  /** ตั้งแท็กที่กรอง (หลายแท็ก = ห้องที่มีแท็กใดแท็กหนึ่ง) */
+  const setTags = (ids: string[]) => start(() => router.replace(hrefWith({ t: ids.join(",") || null, c: null, n: null }), { scroll: false }));
 
   const hrefWith = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString());
@@ -95,47 +85,51 @@ export function ConversationList({
           ))}
         </div>
         {tags.length > 0 && (
-          <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5" aria-label="กรองตามแท็ก">
-            <span className="flex shrink-0 items-center text-muted-foreground" title="กรองตามแท็ก">
-              <Tag className="size-3.5" />
-            </span>
-            {picked.length > 0 && (
-              <Link
-                href={hrefWith({ t: null, c: null, n: null })}
-                replace
-                scroll={false}
-                className="flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
-              >
-                <X className="size-3" /> ล้าง
-              </Link>
-            )}
-            {chipTags.map((t) => {
-              const on = picked.includes(t.id);
-              return (
-                <Link
-                  key={t.id}
-                  href={tagHref(t.id)}
-                  replace
-                  scroll={false}
-                  aria-pressed={on}
+          <div className="space-y-2">
+            <TagPicker
+              tags={tags}
+              picked={picked}
+              onApply={setTags}
+              trigger={
+                <button
+                  type="button"
                   className={cn(
-                    "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
-                    on ? "border-primary bg-primary-soft font-medium text-primary" : "hover:bg-accent",
+                    "flex h-9 w-full items-center gap-2 rounded-md border bg-card px-3 text-left text-sm transition-colors hover:bg-accent",
+                    picked.length ? "border-primary/60" : "border-input text-muted-foreground",
                   )}
                 >
-                  <span className={cn("size-2 rounded-full", tagColor(t.color).dot)} />
-                  {t.name}
-                  <span className={on ? "text-primary/70" : "text-muted-foreground"}>{t.count}</span>
-                </Link>
-              );
-            })}
-            {tags.length > MAX_CHIPS && (
-              <TagPicker
-                tags={tags}
-                picked={picked}
-                hidden={hiddenCount}
-                onApply={(ids) => start(() => router.replace(hrefWith({ t: ids.join(",") || null, c: null, n: null }), { scroll: false }))}
-              />
+                  <Tag className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {picked.length ? `กรองแท็ก: ${pickedTags.map((t) => t.name).join(", ")}` : `กรองตามแท็ก (${tags.length})`}
+                  </span>
+                  {picked.length > 0 && (
+                    <span className="rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">{picked.length}</span>
+                  )}
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              }
+            />
+            {pickedTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" aria-label="แท็กที่เลือก">
+                {pickedTags.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTags(picked.filter((x) => x !== t.id))}
+                    aria-label={`เอาแท็ก ${t.name} ออก`}
+                    className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary-soft-foreground"
+                  >
+                    <span className={cn("size-2 rounded-full", tagColor(t.color).dot)} />
+                    {t.name}
+                    <X className="size-3 opacity-70" />
+                  </button>
+                ))}
+                {pickedTags.length > 1 && (
+                  <button type="button" onClick={() => setTags([])} className="rounded-full px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
+                    ล้างทั้งหมด
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
