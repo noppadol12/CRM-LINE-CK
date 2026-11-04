@@ -2,6 +2,7 @@
 
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
+import { LinkPending } from "./link-pending";
 import { usePathname } from "next/navigation";
 import { Handshake, ListChecks, Menu, MessagesSquare, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,16 +34,19 @@ function Bar({ pathname, unreadBadge, tasksBadge }: Props & { pathname: string |
               key={t.href}
               href={t.href}
               aria-current={on ? "page" : undefined}
-              className={cn("relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium", on ? "text-primary" : "text-muted-foreground")}
+              className={cn(
+                "group relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+                on ? "text-primary" : "text-muted-foreground",
+              )}
             >
-              <span className="relative">
+              <span className="relative transition-transform duration-150 group-active:scale-90">
                 <t.icon className={cn("size-[22px]", on && "stroke-[2.25]")} />
                 {t.badge && (
                   <span className="absolute -top-1.5 left-3.5 scale-90">{t.badge === "unread" ? unreadBadge : tasksBadge}</span>
                 )}
               </span>
               {t.label}
-              {on && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />}
+              {on ? <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" /> : <LinkPending className="absolute top-0 h-0.5 w-8 rounded-full bg-primary/60" />}
             </Link>
           );
         })}
@@ -52,9 +56,9 @@ function Bar({ pathname, unreadBadge, tasksBadge }: Props & { pathname: string |
           trigger={
             <button
               type="button"
-              className={cn("flex flex-col items-center justify-center gap-1 text-[11px] font-medium", onMain ? "text-muted-foreground" : "text-primary")}
+              className={cn("group flex flex-col items-center justify-center gap-1 text-[11px] font-medium", onMain ? "text-muted-foreground" : "text-primary")}
             >
-              <Menu className="size-[22px]" />
+              <Menu className="size-[22px] transition-transform duration-150 group-active:scale-90" />
               เมนู
             </button>
           }

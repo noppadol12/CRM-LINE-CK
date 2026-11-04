@@ -2,6 +2,7 @@
 
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
+import { LinkPending } from "./link-pending";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_FOOTER, NAV_MAIN, type NavItem } from "./nav-config";
@@ -28,7 +29,7 @@ function NavLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+        "group relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-[background-color,color,scale] duration-150 active:scale-[0.98]",
         active ? "bg-primary-soft text-primary-soft-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground",
       )}
     >
@@ -36,6 +37,7 @@ function NavLink({
       <span className="flex-1">{item.label}</span>
       {item.showUnread && badge}
       {item.showTasks && tasksBadge}
+      {!active && <LinkPending className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary" />}
     </Link>
   );
 }

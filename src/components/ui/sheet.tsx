@@ -18,11 +18,12 @@ function SheetContent({
 }: React.ComponentProps<typeof SheetPrimitive.Content> & { side?: "left" | "right" | "bottom" }) {
   return (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
+      <SheetPrimitive.Overlay className="ck-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px]" />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
           "fixed z-50 flex flex-col bg-sidebar shadow-lg",
+          side === "bottom" ? "ck-sheet-bottom" : side === "left" ? "ck-sheet-left" : "ck-sheet-right",
           side === "bottom"
             ? "inset-x-0 bottom-0 max-h-[90dvh] rounded-t-2xl border-t bg-card pb-safe"
             : cn("inset-y-0 h-full w-72", side === "left" ? "left-0 border-r" : "right-0 border-l"),
