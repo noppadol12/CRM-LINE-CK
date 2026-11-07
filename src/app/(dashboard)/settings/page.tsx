@@ -164,6 +164,7 @@ async function TeamSection() {
             role: m.role,
             isActive: m.isActive,
             mustChangePassword: m.mustChangePassword,
+            resetRequested: m.resetRequested,
             lastLogin: m.lastLoginAt ? formatDateTime(m.lastLoginAt) : null,
             manageable: canManageMember(user, m),
             isSelf: m.id === user.id,

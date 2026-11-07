@@ -31,6 +31,8 @@ model AdminUser {
   sessionVersion     Int       @default(0)
   mustChangePassword Boolean   @default(false) // รหัสชั่วคราวที่หัวหน้าตั้งให้
   lastLoginAt        DateTime?
+  // กด "ลืมรหัสผ่าน" ตอนที่ระบบยังไม่ได้ตั้งอีเมล → แจ้งเจ้าของ/แอดมินให้รีเซ็ตให้
+  resetRequestedAt   DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -43,8 +45,24 @@ model AdminUser {
   shipments         Shipment[]
   tasksAssigned     Task[]             @relation("TaskAssignee")
   tasksCreated      Task[]             @relation("TaskCreator")
+  resetTokens       PasswordResetToken[]
 
   @@map("admin_users")
+}
+
+/// ลิงก์ตั้งรหัสผ่านใหม่ที่ส่งทางอีเมล — เก็บเฉพาะ hash ของ token, ใช้ได้ครั้งเดียว
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  ip        String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("password_reset_tokens")
 }
 
 // ---------- Customers ----------

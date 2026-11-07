@@ -29,6 +29,7 @@ export type MemberRow = {
   role: Role;
   isActive: boolean;
   mustChangePassword: boolean;
+  resetRequested: boolean;
   lastLogin: string | null;
   manageable: boolean;
   isSelf: boolean;
@@ -198,7 +199,12 @@ export function TeamManager({ members, assignableRoles }: { members: MemberRow[]
                 {m.isSelf && <span className="text-xs font-normal text-muted-foreground">(คุณ)</span>}
                 <Badge variant={m.role === "SALES" ? "secondary" : "soft"}>{ROLE_LABEL[m.role]}</Badge>
                 {!m.isActive && <Badge variant="outline">ปิดใช้งาน</Badge>}
-                {m.isActive && m.mustChangePassword && (
+                {m.isActive && m.resetRequested && (
+                  <Badge variant="outline" className="border-rose-300 text-rose-700">
+                    ขอรีเซ็ตรหัส
+                  </Badge>
+                )}
+                {m.isActive && m.mustChangePassword && !m.resetRequested && (
                   <Badge variant="outline" className="border-amber-300 text-amber-700">
                     รอเปลี่ยนรหัส
                   </Badge>

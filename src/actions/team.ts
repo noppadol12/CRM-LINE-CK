@@ -85,7 +85,7 @@ export async function resetMemberPassword(id: string): Promise<ActionResult<Temp
   const password = tempPassword();
   await prisma.adminUser.update({
     where: { id },
-    data: { passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true, sessionVersion: { increment: 1 } },
+    data: { passwordHash: await bcrypt.hash(password, 10), mustChangePassword: true, sessionVersion: { increment: 1 }, resetRequestedAt: null },
   });
   await prisma.loginAttempt.deleteMany({ where: { email: target.email, success: false } });
   refresh();

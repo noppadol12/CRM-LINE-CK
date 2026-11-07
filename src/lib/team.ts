@@ -3,8 +3,8 @@ import type { AdminRole } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export function listTeam() {
-  return prisma.adminUser.findMany({
+export async function listTeam() {
+  const rows = await prisma.adminUser.findMany({
     orderBy: [{ isActive: "desc" }, { role: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -13,11 +13,15 @@ export function listTeam() {
       role: true,
       isActive: true,
       mustChangePassword: true,
+      resetRequestedAt: true,
       lastLoginAt: true,
       createdAt: true,
       _count: { select: { ownedDeals: true, assignedCustomers: true } },
     },
   });
+  // กด "ลืมรหัสผ่าน" ภายใน 7 วัน และยังไม่ได้รีเซ็ต
+  const since = Date.now() - 7 * 86_400_000;
+  return rows.map((r) => ({ ...r, resetRequested: Boolean(r.resetRequestedAt && r.resetRequestedAt.getTime() > since) }));
 }
 
 export type TeamMember = Awaited<ReturnType<typeof listTeam>>[number];

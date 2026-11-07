@@ -6,7 +6,7 @@ import { unsealData } from "iron-session";
  * การตรวจสิทธิ์จริงทำใน getCurrentUser() (src/lib/auth.ts) ทุกครั้งที่อ่านข้อมูล
  */
 const COOKIE = "ckcrm_session";
-const PUBLIC_PATHS = ["/login", "/privacy"];
+const PUBLIC_PATHS = ["/login", "/privacy", "/forgot-password", "/reset-password"];
 
 async function hasValidSession(request: NextRequest): Promise<boolean> {
   const seal = request.cookies.get(COOKIE)?.value;

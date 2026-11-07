@@ -64,6 +64,7 @@ export async function runMaintenance({ budgetMs }: { budgetMs: number }) {
       where: { processedAt: { not: null }, receivedAt: { lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } },
     }),
   ]);
+  await prisma.passwordResetToken.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } }).catch(() => undefined);
   return { reminders, events, media, cleaned: { loginAttempts: attempts.count, webhookEvents: oldEvents.count } };
 }
 
