@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { normalizePhone } from "@/lib/format";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { isPaymentTerm, paymentTermLabel } from "@/lib/payment-terms";
 
 const optional = (max: number) =>
   z
@@ -136,4 +137,23 @@ export async function assignCustomer(customerId: string, adminId: string | null)
   await prisma.customer.update({ where: { id: customerId }, data: { assignedToId: adminId } });
   refresh();
   return { ok: true };
+}
+
+/** ตั้งเงื่อนไขการชำระเงิน (เจ้าของ/แอดมินเท่านั้น) */
+export async function setPaymentTerm(
+  customerId: string,
+  input: { term: string | null; days?: string | number | null; note?: string | null },
+): Promise<ActionResult> {
+  if (!(await requireManager())) return { ok: false, error: "เฉพาะเจ้าของหรือแอดมินที่ตั้งเงื่อนไขการชำระเงินได้" };
+  const term = input.term && isPaymentTerm(input.term) ? input.term : null;
+  const daysNum = Number(input.days);
+  const creditDays = term && term !== "cash" && Number.isFinite(daysNum) && daysNum > 0 ? Math.min(365, Math.round(daysNum)) : null;
+  const paymentNote = term ? String(input.note ?? "").trim().slice(0, 200) || null : null;
+  const r = await prisma.customer.updateMany({
+    where: { id: customerId, deletedAt: null },
+    data: { paymentTerm: term, creditDays, paymentNote },
+  });
+  if (!r.count) return { ok: false, error: "ไม่พบลูกค้า" };
+  refresh();
+  return { ok: true, message: term ? `ตั้งเป็น ${paymentTermLabel(term, creditDays)} แล้ว` : "ล้างเงื่อนไขการชำระเงินแล้ว" };
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { isPaymentTerm, type PaymentTerm } from "@/lib/payment-terms";
 
 export const PAGE_SIZE = 20;
 
@@ -8,6 +9,8 @@ export type CustomerFilters = {
   q?: string;
   tag?: string;
   status?: "following" | "unfollowed" | "manual";
+  /** เงื่อนไขชำระเงิน หรือ "none" = ยังไม่ระบุ */
+  pay?: PaymentTerm | "none";
   trash?: boolean;
   page?: number;
 };
@@ -22,6 +25,7 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
     tag: one("tag") || undefined,
     status: status === "following" || status === "unfollowed" || status === "manual" ? status : undefined,
     trash: one("view") === "trash",
+    pay: one("pay") === "none" ? "none" : isPaymentTerm(one("pay")) ? (one("pay") as PaymentTerm) : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
   };
 }
@@ -41,6 +45,7 @@ function buildWhere(f: CustomerFilters): Prisma.CustomerWhereInput {
     and.push({ OR: or });
   }
   if (f.tag) and.push({ tags: { some: { tagId: f.tag } } });
+  if (f.pay) and.push({ paymentTerm: f.pay === "none" ? null : f.pay });
   if (f.status === "following") and.push({ followStatus: "FOLLOWING" });
   if (f.status === "unfollowed") and.push({ followStatus: "UNFOLLOWED" });
   if (f.status === "manual") and.push({ lineUserId: null });
@@ -70,6 +75,8 @@ export async function listCustomers(f: CustomerFilters) {
         company: true,
         address: true,
         followStatus: true,
+        paymentTerm: true,
+        creditDays: true,
         _count: { select: { deals: { where: { stage: { notIn: ["WON", "LOST"] } } } } },
         lastMessageAt: true,
         unreadCount: true,

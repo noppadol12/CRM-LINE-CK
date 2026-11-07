@@ -11,6 +11,7 @@ import { initials } from "@/lib/utils";
 import { CustomerDeals } from "@/components/deals/customer-deals";
 import { WithStages } from "@/components/deals/with-stages";
 import { ShippingCard, type ShipmentSummary } from "@/components/shipping/shipping-card";
+import { PaymentTermCard } from "@/components/customers/payment-term";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskList, type TaskItem } from "@/components/tasks/task-list";
 import { ListChecks, Plus } from "lucide-react";
@@ -79,6 +80,13 @@ export function CustomerPanel({
           </div>
         )}
       </dl>
+
+      <PaymentTermCard
+        compact
+        customerId={c.id}
+        info={{ paymentTerm: c.paymentTerm, creditDays: c.creditDays, paymentNote: c.paymentNote }}
+        canEdit={canManage}
+      />
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">

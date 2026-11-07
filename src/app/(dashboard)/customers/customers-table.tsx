@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CustomerFormDialog } from "@/components/customers/customer-form-dialog";
 import { FollowStatusBadge } from "@/components/customers/follow-status";
 import { TagChip } from "@/components/tag-chip";
+import { PaymentTermBadge } from "@/components/customers/payment-term";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +84,7 @@ export function CustomersTable({ rows, trash, canManage, hasFilter }: Props) {
                       <Link href={href} className="truncate font-medium hover:underline">
                         {name}
                       </Link>
+                      <PaymentTermBadge term={c.paymentTerm} days={c.creditDays} />
                       {c.unreadCount > 0 && (
                         <span className="size-2 shrink-0 rounded-full bg-primary" title="มีข้อความรอตอบ" />
                       )}

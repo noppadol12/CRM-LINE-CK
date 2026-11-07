@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { displayName } from "@/lib/format";
 import { cn, initials } from "@/lib/utils";
+import { PaymentTermBadge } from "@/components/customers/payment-term";
 import { MessageBubble, type BubbleMessage } from "./message-bubble";
 import { QuickReplyPicker, type QuickReply } from "./quick-reply-picker";
 
@@ -24,6 +25,8 @@ type ThreadCustomer = {
   pictureUrl: string | null;
   followStatus: "FOLLOWING" | "UNFOLLOWED" | "UNKNOWN";
   unreadCount: number;
+  paymentTerm: string | null;
+  creditDays: number | null;
 };
 
 const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" });
@@ -246,7 +249,10 @@ export function ChatThread({
           <AvatarFallback>{initials(name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{name}</p>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate font-medium">{name}</p>
+            <PaymentTermBadge term={customer.paymentTerm} days={customer.creditDays} />
+          </div>
           <p className="truncate text-xs text-muted-foreground">
             {group
               ? blocked

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PAYMENT_TERMS, PAYMENT_TERM_IDS } from "@/lib/payment-terms";
 import { cn } from "@/lib/utils";
 
 type TagOption = { id: string; name: string; color: string };
@@ -58,6 +59,7 @@ export function CustomerFilters({ tags, canSeeTrash }: { tags: TagOption[]; canS
 
   const status = params.get("status") ?? "";
   const tag = params.get("tag") ?? "";
+  const pay = params.get("pay") ?? "";
 
   return (
     <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
@@ -99,6 +101,20 @@ export function CustomerFilters({ tags, canSeeTrash }: { tags: TagOption[]; canS
               {t.name}
             </option>
           ))}
+        </select>
+        <select
+          value={pay}
+          onChange={(e) => update({ pay: e.target.value || null })}
+          aria-label="กรองตามการชำระเงิน"
+          className="h-9 rounded-md border border-input bg-card px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
+        >
+          <option value="">การชำระเงิน: ทั้งหมด</option>
+          {PAYMENT_TERM_IDS.map((id) => (
+            <option key={id} value={id}>
+              {PAYMENT_TERMS[id].label}
+            </option>
+          ))}
+          <option value="none">ยังไม่ระบุ</option>
         </select>
 
         {!trash && (

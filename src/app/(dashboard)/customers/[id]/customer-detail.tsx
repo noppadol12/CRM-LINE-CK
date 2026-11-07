@@ -30,6 +30,7 @@ import { CustomerActions, RestoreBanner } from "./customer-actions";
 import { NotesPanel } from "@/components/customers/notes-panel";
 import { TagEditor } from "@/components/customers/tag-editor";
 import { ShippingCard } from "@/components/shipping/shipping-card";
+import { PaymentTermCard } from "@/components/customers/payment-term";
 import { Timeline } from "@/components/customers/timeline";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskList } from "@/components/tasks/task-list";
@@ -180,6 +181,8 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
               </div>
             </CardContent>
           </Card>
+
+          <PaymentTermCard customerId={c.id} info={{ paymentTerm: c.paymentTerm, creditDays: c.creditDays, paymentNote: c.paymentNote }} canEdit={manager} />
 
           <ShippingCard
             customer={{ id: c.id, province: c.province, shippingNote: c.shippingNote, carrier: c.carrier, backupCarrier: c.backupCarrier }}

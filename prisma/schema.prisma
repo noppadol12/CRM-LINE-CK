@@ -91,6 +91,10 @@ model Customer {
   carrierId       String? // ขนส่งหลัก
   backupCarrierId String? // ขนส่งสำรอง
   shippingNote    String? // เช่น รับที่ท่ารถหาดใหญ่ โทรแจ้งก่อนส่ง
+  // เงื่อนไขการชำระเงิน: cash = เงินสด/โอนก่อนส่ง, credit = เครดิต, pdc = โพสต์เดตเช็ค (เช็คล่วงหน้า)
+  paymentTerm     String?
+  creditDays      Int? // จำนวนวันเครดิต / ลงวันที่เช็คล่วงหน้ากี่วัน
+  paymentNote     String? // เช่น วงเงิน 50,000 วางบิลทุกวันที่ 25
   carrier         Carrier? @relation("PrimaryCarrier", fields: [carrierId], references: [id], onDelete: SetNull)
   backupCarrier   Carrier? @relation("BackupCarrier", fields: [backupCarrierId], references: [id], onDelete: SetNull)
 
@@ -107,6 +111,7 @@ model Customer {
 
   @@index([phone])
   @@index([province])
+  @@index([paymentTerm])
   @@index([carrierId])
   @@index([lastMessageAt(sort: Desc)])
   @@index([deletedAt])

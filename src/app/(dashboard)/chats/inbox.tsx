@@ -61,6 +61,8 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               pictureUrl: thread.customer.pictureUrl,
               followStatus: thread.customer.followStatus,
               unreadCount: thread.customer.unreadCount,
+              paymentTerm: thread.customer.paymentTerm,
+              creditDays: thread.customer.creditDays,
             }}
             freeReplyUntil={
               thread.customer.lastReplyToken && thread.customer.lastReplyTokenAt

@@ -52,6 +52,8 @@ export async function listConversations({ q, filter, tagIds = [] }: { q?: string
       lastMessagePreview: true,
       unreadCount: true,
       followStatus: true,
+      paymentTerm: true,
+      creditDays: true,
       tags: { select: { tag: { select: { name: true, color: true } } }, take: 2, orderBy: { assignedAt: "asc" } },
     },
   });

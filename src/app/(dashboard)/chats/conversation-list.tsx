@@ -7,6 +7,7 @@ import { Ban, ChevronDown, Loader2, Search, Tag, Users, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
+import { PaymentTermBadge } from "@/components/customers/payment-term";
 import { tagColor } from "@/lib/tag-colors";
 import { cn, initials } from "@/lib/utils";
 import { TagPicker, type TagOption } from "./tag-picker";
@@ -175,6 +176,7 @@ export function ConversationList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className={cn("truncate text-sm", c.unreadCount > 0 ? "font-semibold" : "font-medium")}>{name}</span>
+                    <PaymentTermBadge term={c.paymentTerm} days={c.creditDays} short />
                     <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
                       {c.lastMessageAt && timeAgo(c.lastMessageAt).replace("ที่ผ่านมา", "")}
                     </span>

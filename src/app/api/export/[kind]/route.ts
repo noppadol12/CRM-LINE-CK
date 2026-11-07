@@ -4,6 +4,7 @@ import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { listStages } from "@/lib/stages";
 import { CARRIER_KINDS, PAYMENT_LABEL } from "@/lib/provinces";
+import { paymentTermLabel } from "@/lib/payment-terms";
 
 export const maxDuration = 60;
 
@@ -47,7 +48,7 @@ async function* batches<T extends { id: string }>(fetch: (cursor: string | undef
 const page = (cursor: string | undefined) => ({ take: BATCH, ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}), orderBy: { id: "asc" as const } });
 
 async function* customersCsv() {
-  yield row(["รหัส", "ชื่อ", "ชื่อ LINE", "LINE User ID", "ประเภทแชท", "เบอร์โทร", "อีเมล", "บริษัท", "ที่อยู่", "จังหวัด", "ขนส่งหลัก", "ขนส่งสำรอง", "หมายเหตุจัดส่ง", "แท็ก", "สถานะ LINE", "ผู้ดูแล", "ข้อความล่าสุด", "สร้างเมื่อ", "ลบแล้ว"]);
+  yield row(["รหัส", "ชื่อ", "ชื่อ LINE", "LINE User ID", "ประเภทแชท", "เบอร์โทร", "อีเมล", "บริษัท", "ที่อยู่", "จังหวัด", "ขนส่งหลัก", "ขนส่งสำรอง", "หมายเหตุจัดส่ง", "การชำระเงิน", "หมายเหตุการชำระ", "แท็ก", "สถานะ LINE", "ผู้ดูแล", "ข้อความล่าสุด", "สร้างเมื่อ", "ลบแล้ว"]);
   for await (const rows of batches((c) =>
     prisma.customer.findMany({
       ...page(c),
@@ -75,6 +76,8 @@ async function* customersCsv() {
           r.carrier?.name,
           r.backupCarrier?.name,
           r.shippingNote,
+          paymentTermLabel(r.paymentTerm, r.creditDays),
+          r.paymentNote,
           r.tags.map((t) => t.tag.name).join(", "),
           FOLLOW[r.followStatus],
           r.assignedTo?.name,
