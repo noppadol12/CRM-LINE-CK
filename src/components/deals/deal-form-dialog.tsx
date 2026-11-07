@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LOST, bangkokDayKey } from "@/lib/deal-stages";
+import { LOST, bangkokDayKey, isClosedStage } from "@/lib/deal-stages";
 import { useStages } from "./stages-context";
 import type { DealDTO } from "@/lib/deals";
 import { cn } from "@/lib/utils";
@@ -154,6 +154,8 @@ function DealForm({ deal, customer, owners, onDone }: { deal?: DealDTO; customer
   }, [state, onDone]);
 
   const day = (d: Date | null | undefined) => (d ? bangkokDayKey(d) : "");
+  // ไม่ได้เลือกวัน = ใช้วันที่บันทึก (ดีลที่ปิดแล้วไม่ต้องตั้ง)
+  const orToday = (d: Date | null | undefined) => day(d) || (deal && isClosedStage(deal.stage) ? "" : bangkokDayKey(new Date()));
 
   return (
     <form
@@ -201,13 +203,13 @@ function DealForm({ deal, customer, owners, onDone }: { deal?: DealDTO; customer
       )}
 
       <Field label="นัดติดตาม" error={fe?.nextFollowUpAt}>
-        <Input name="nextFollowUpAt" type="date" defaultValue={day(deal?.nextFollowUpAt)} />
+        <Input name="nextFollowUpAt" type="date" defaultValue={orToday(deal?.nextFollowUpAt)} />
       </Field>
       <Field label="เลขที่ใบเสนอราคา" error={fe?.quoteNo}>
         <Input name="quoteNo" defaultValue={deal?.quoteNo ?? ""} placeholder="QT2026-0001" />
       </Field>
       <Field label="คาดว่าจะปิดการขาย" error={fe?.expectedCloseDate}>
-        <Input name="expectedCloseDate" type="date" defaultValue={day(deal?.expectedCloseDate)} />
+        <Input name="expectedCloseDate" type="date" defaultValue={orToday(deal?.expectedCloseDate)} />
       </Field>
       <Field label="ผู้ดูแล">
         <select name="ownerId" defaultValue={deal?.owner?.id ?? ""} className={selectCls}>

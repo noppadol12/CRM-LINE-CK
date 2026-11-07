@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { LOST, isClosedStage } from "@/lib/deal-stages";
+import { LOST, bangkokDayKey, isClosedStage } from "@/lib/deal-stages";
 import { listStages } from "@/lib/stages";
 import { displayName } from "@/lib/format";
 import { NO_PERMISSION, requireManager, type ActionResult } from "@/lib/permissions";
@@ -74,6 +74,15 @@ function fieldErrors(e: z.ZodError) {
   return out;
 }
 
+/** วันนี้ (เวลาไทย) ในรูปแบบเดียวกับ dateInput */
+const todayNoon = () => new Date(`${bangkokDayKey(new Date())}T12:00:00+07:00`);
+
+/** ไม่ได้เลือกวัน → ใช้วันที่บันทึก (เฉพาะดีลที่ยังไม่ปิด) */
+function withDefaultDates<T extends { stage: string; nextFollowUpAt: Date | null; expectedCloseDate: Date | null }>(d: T): T {
+  if (isClosedStage(d.stage)) return d;
+  return { ...d, nextFollowUpAt: d.nextFollowUpAt ?? todayNoon(), expectedCloseDate: d.expectedCloseDate ?? todayNoon() };
+}
+
 const closedAtFor = (stage: string) => (isClosedStage(stage) ? new Date() : null);
 
 /** ตรวจว่าขั้นมีอยู่จริง — ไม่ระบุ = ขั้นแรก */
@@ -89,7 +98,7 @@ export async function createDeal(_prev: DealFormState, fd: FormData): Promise<De
   if (!parsed.success) return { ok: false, error: "กรุณาตรวจสอบข้อมูล", fieldErrors: fieldErrors(parsed.error) };
   const stage = await resolveStage(parsed.data.stage);
   if (!stage) return { ok: false, error: "ขั้นไม่ถูกต้อง (อาจถูกลบไปแล้ว) กรุณาเลือกใหม่" };
-  const d = { ...parsed.data, stage };
+  const d = withDefaultDates({ ...parsed.data, stage });
 
   const customer = await prisma.customer.findUnique({ where: { id: d.customerId }, select: { id: true } });
   if (!customer) return { ok: false, error: "ไม่พบลูกค้า", fieldErrors: { customerId: "ไม่พบลูกค้า" } };
@@ -114,7 +123,7 @@ export async function updateDeal(id: string, _prev: DealFormState, fd: FormData)
   if (!parsed.success) return { ok: false, error: "กรุณาตรวจสอบข้อมูล", fieldErrors: fieldErrors(parsed.error) };
   const stage = await resolveStage(parsed.data.stage);
   if (!stage) return { ok: false, error: "ขั้นไม่ถูกต้อง (อาจถูกลบไปแล้ว) กรุณาเลือกใหม่" };
-  const d = { ...parsed.data, stage };
+  const d = withDefaultDates({ ...parsed.data, stage });
 
   const current = await prisma.deal.findUnique({ where: { id }, select: { stage: true } });
   if (!current) return { ok: false, error: "ไม่พบดีล" };
