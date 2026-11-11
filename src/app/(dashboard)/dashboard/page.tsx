@@ -6,10 +6,16 @@ import { RecentChats, RecentChatsSkeleton } from "./recent-chats";
 import { Greeting } from "./greeting";
 import { FollowUps, FollowUpsSkeleton } from "./follow-ups";
 import { TasksToday } from "./tasks-today";
+import { MonthSales, MonthSalesSkeleton } from "./month-sales";
 
 export const metadata: Metadata = { title: "แดชบอร์ด · CK CRM" };
 
-export default function DashboardPage() {
+async function MonthSalesSection({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
+  const m = (await searchParams).m;
+  return <MonthSales month={typeof m === "string" && /^\d{4}-\d{2}$/.test(m) ? m : undefined} />;
+}
+
+export default function DashboardPage(props: PageProps<"/dashboard">) {
   return (
     <>
       <PageHeader title="แดชบอร์ด" />
@@ -19,6 +25,10 @@ export default function DashboardPage() {
 
       <Suspense fallback={<KpiCardsSkeleton />}>
         <KpiCards />
+      </Suspense>
+
+      <Suspense fallback={<MonthSalesSkeleton />}>
+        <MonthSalesSection searchParams={props.searchParams} />
       </Suspense>
 
       <div className="grid gap-6 xl:grid-cols-3">

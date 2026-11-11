@@ -181,3 +181,76 @@ export async function ownerPerformance(days: number) {
     })
     .filter((r) => r.won + r.lost + r.open > 0);
 }
+
+export type MonthSales = {
+  month: string; // YYYY-MM (เวลาไทย)
+  opened: number; // มูลค่าดีลที่เปิดในเดือนนั้น
+  openedDeals: number;
+  won: number; // ในจำนวนนั้น ปิดการขายได้
+  wonDeals: number;
+  lost: number;
+  lostDeals: number;
+  pending: number; // ยังไม่ปิด
+  pendingDeals: number;
+  wonInMonth: number; // ยอดปิดการขายที่เกิดในเดือนนั้นทั้งหมด (รวมดีลที่เปิดจากเดือนก่อน)
+  wonInMonthDeals: number;
+};
+
+/**
+ * สัดส่วนดีลรายเดือน 12 เดือนล่าสุด: ดีลที่ "เปิด" ในเดือนนั้น ปิดได้กี่บาท / กี่ %
+ * + ยอดปิดการขายจริงที่เกิดในเดือนนั้น
+ */
+export async function monthlySales(): Promise<MonthSales[]> {
+  const rows = await prisma.$queryRaw<Record<string, unknown>[]>`
+    WITH months AS (
+      SELECT to_char(m, 'YYYY-MM') AS month
+      FROM generate_series(
+        date_trunc('month', (now() at time zone 'UTC') + interval '7 hours') - interval '11 months',
+        date_trunc('month', (now() at time zone 'UTC') + interval '7 hours'),
+        interval '1 month') AS m
+    ),
+    live AS (
+      SELECT d.* FROM deals d JOIN customers c ON c.id = d."customerId" WHERE c."deletedAt" IS NULL
+    ),
+    cohort AS (
+      SELECT to_char(d."createdAt" + interval '7 hours', 'YYYY-MM') AS month,
+        COALESCE(SUM(d.amount), 0) AS opened, COUNT(*) AS opened_deals,
+        COALESCE(SUM(d.amount) FILTER (WHERE d.stage = 'WON'), 0) AS won, COUNT(*) FILTER (WHERE d.stage = 'WON') AS won_deals,
+        COALESCE(SUM(d.amount) FILTER (WHERE d.stage = 'LOST'), 0) AS lost, COUNT(*) FILTER (WHERE d.stage = 'LOST') AS lost_deals
+      FROM live d GROUP BY 1
+    ),
+    closed AS (
+      SELECT to_char(d."closedAt" + interval '7 hours', 'YYYY-MM') AS month, COALESCE(SUM(d.amount), 0) AS won_in_month, COUNT(*) AS won_in_month_deals
+      FROM live d WHERE d.stage = 'WON' AND d."closedAt" IS NOT NULL GROUP BY 1
+    )
+    SELECT months.month,
+      COALESCE(cohort.opened, 0) AS opened, COALESCE(cohort.opened_deals, 0) AS opened_deals,
+      COALESCE(cohort.won, 0) AS won, COALESCE(cohort.won_deals, 0) AS won_deals,
+      COALESCE(cohort.lost, 0) AS lost, COALESCE(cohort.lost_deals, 0) AS lost_deals,
+      COALESCE(closed.won_in_month, 0) AS won_in_month, COALESCE(closed.won_in_month_deals, 0) AS won_in_month_deals
+    FROM months
+    LEFT JOIN cohort ON cohort.month = months.month
+    LEFT JOIN closed ON closed.month = months.month
+    ORDER BY months.month`;
+  return rows.map((r) => {
+    const opened = num(r.opened);
+    const won = num(r.won);
+    const lost = num(r.lost);
+    const openedDeals = num(r.opened_deals);
+    const wonDeals = num(r.won_deals);
+    const lostDeals = num(r.lost_deals);
+    return {
+      month: String(r.month),
+      opened,
+      openedDeals,
+      won,
+      wonDeals,
+      lost,
+      lostDeals,
+      pending: Math.max(0, opened - won - lost),
+      pendingDeals: Math.max(0, openedDeals - wonDeals - lostDeals),
+      wonInMonth: num(r.won_in_month),
+      wonInMonthDeals: num(r.won_in_month_deals),
+    };
+  });
+}
