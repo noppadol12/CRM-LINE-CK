@@ -4,6 +4,7 @@ import * as React from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSwipeDismiss } from "@/lib/use-swipe-dismiss";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -13,12 +14,25 @@ function DialogContent({
   className,
   children,
   showClose = true,
+  ref,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & { showClose?: boolean }) {
+  const [node, setNode] = React.useState<HTMLDivElement | null>(null);
+  // มือถือ: ปัดลงเพื่อปิด
+  useSwipeDismiss(node, { axis: "down" });
+  const setRef = React.useCallback(
+    (el: HTMLDivElement | null) => {
+      setNode(el);
+      if (typeof ref === "function") ref(el);
+      else if (ref) ref.current = el;
+    },
+    [ref],
+  );
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="ck-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px]" />
       <DialogPrimitive.Content
+        ref={setRef}
         data-slot="dialog-content"
         className={cn(
           // มือถือ: แผ่นเลื่อนขึ้นจากด้านล่าง (กดถึงง่ายด้วยนิ้วโป้ง) · จอใหญ่: กล่องกลางจอ
@@ -28,7 +42,7 @@ function DialogContent({
         )}
         {...props}
       >
-        <span aria-hidden className="absolute top-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-muted-foreground/25 sm:hidden" />
+        <span aria-hidden className="absolute top-2 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-muted-foreground/30 sm:hidden" />
         {children}
         {showClose && (
           <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">

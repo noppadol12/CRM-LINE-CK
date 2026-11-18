@@ -153,7 +153,7 @@ export function ConversationList({
                 scroll={false}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors",
-                  active ? "bg-primary-soft" : "hover:bg-accent",
+                  active ? "bg-primary-soft" : "hover:bg-accent active:bg-accent",
                 )}
               >
                 <div className="relative">

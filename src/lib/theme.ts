@@ -25,7 +25,18 @@ export function applyTheme(pref: ThemePref = readPref()) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#16181d" : "#00a24f");
 }
 
+let switchTimer: number | undefined;
+/** ค่อย ๆ เปลี่ยนสีตอนสลับธีม (ไม่ทำถ้าเครื่องตั้งลดการเคลื่อนไหว) */
+function smoothSwitch() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const root = document.documentElement;
+  root.classList.add("theme-switching");
+  window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => root.classList.remove("theme-switching"), 320);
+}
+
 export function setThemePref(pref: ThemePref) {
+  smoothSwitch();
   try {
     if (pref === "system") localStorage.removeItem(THEME_KEY);
     else localStorage.setItem(THEME_KEY, pref);

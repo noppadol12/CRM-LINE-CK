@@ -8,7 +8,7 @@ import { UserMenu } from "./user-menu";
 
 export function Topbar() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card/85 px-4 backdrop-blur sm:h-16 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 ck-material border-b border-border/60 px-4 sm:h-16 sm:px-6">
       <Link href="/dashboard" className="shrink-0 lg:hidden" aria-label="หน้าแรก">
         <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">CK</span>
       </Link>

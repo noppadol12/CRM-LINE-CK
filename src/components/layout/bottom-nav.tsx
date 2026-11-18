@@ -24,7 +24,7 @@ function Bar({ pathname, unreadBadge, tasksBadge }: Props & { pathname: string |
   return (
     <nav
       aria-label="เมนูหลัก"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-safe backdrop-blur supports-[backdrop-filter]:bg-card/85 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 ck-material border-t border-border/60 pb-safe lg:hidden"
     >
       <div className="mx-auto grid h-16 max-w-lg grid-cols-5">
         {TABS.map((t) => {
