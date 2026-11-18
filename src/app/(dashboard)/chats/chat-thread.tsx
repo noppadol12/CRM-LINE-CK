@@ -236,9 +236,9 @@ export function ChatThread({
 
   return (
     // มือถือ: ห้องแชทเต็มจอ (ทับแถบบน/ล่าง) เหมือนแอป LINE · จอใหญ่: คอลัมน์กลาง
-    <section className="fixed inset-0 z-50 flex h-dvh min-h-0 min-w-0 flex-col bg-card lg:static lg:z-auto lg:h-auto">
+    <section className="fixed inset-0 z-50 flex h-dvh min-h-0 min-w-0 flex-col bg-card pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] lg:static lg:z-auto lg:h-auto lg:px-0">
       {/* ===== หัวห้อง ===== */}
-      <header className="flex items-center gap-2 border-b pt-safe px-2 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+      <header className="flex items-center gap-2 border-b px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:gap-3 sm:px-4 sm:pb-2.5 lg:pt-2.5">
         <Button variant="ghost" size="icon" asChild className="lg:hidden">
           <Link href={backHref} aria-label="กลับไปรายชื่อแชท">
             <ArrowLeft />

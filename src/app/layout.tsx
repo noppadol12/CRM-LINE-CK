@@ -31,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-sans-thai)]">
+      <body className="min-h-full flex flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] font-[family-name:var(--font-sans-thai)]">
         {children}
         <Toaster />
         <PwaRegister />
