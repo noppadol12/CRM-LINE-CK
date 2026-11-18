@@ -12,7 +12,7 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:space-y-6 sm:p-6 sm:pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:p-8">
+        <main className="mx-auto w-full max-w-[2400px] flex-1 space-y-5 p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] sm:space-y-6 sm:p-6 sm:pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:p-8 [&:has([data-fullbleed])]:max-w-none lg:[&:has([data-fullbleed])]:p-4">
           <Suspense fallback={null}>
             <PasswordNotice />
           </Suspense>

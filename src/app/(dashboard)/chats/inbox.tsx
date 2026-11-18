@@ -31,10 +31,12 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
 
   return (
     <div
+      data-fullbleed
       className={cn(
         // มือถือ: รายชื่อแชทเลื่อนไปกับหน้า · จอใหญ่: สูงพอดีจอ แบ่งคอลัมน์
-        "-mx-4 -mt-4 grid border-b bg-card sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-xl sm:border sm:shadow-xs lg:h-[calc(100svh-8rem)]",
-        "lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)_320px]",
+        "-mx-4 -mt-4 grid border-b bg-card sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-xl sm:border sm:shadow-xs lg:h-[calc(100svh-6rem)]",
+        // จอกว้าง: ใช้เต็มจอ คอลัมน์ข้างกว้างขึ้นตามจอ ช่องแชทได้พื้นที่ที่เหลือทั้งหมด
+        "lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)_340px] min-[1920px]:grid-cols-[380px_minmax(0,1fr)_380px]",
       )}
     >
       <AutoRefresh intervalMs={5000} />

@@ -307,7 +307,7 @@ export function DealBoard({
                 if (deal && deal.stage !== stage.id) move(id, stage.id);
               }}
               className={cn(
-                "flex w-[82vw] max-w-80 shrink-0 snap-center flex-col rounded-xl border bg-muted/40 transition-colors sm:w-72 sm:snap-start",
+                "flex w-[82vw] max-w-80 shrink-0 snap-center flex-col rounded-xl border bg-muted/40 transition-colors sm:w-72 sm:snap-start xl:w-auto xl:max-w-none xl:min-w-64 xl:flex-1",
                 dragOver === stage.id && "border-primary bg-primary-soft/60",
               )}
             >
