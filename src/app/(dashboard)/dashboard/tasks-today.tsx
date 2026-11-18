@@ -26,7 +26,7 @@ export async function TasksToday() {
               </Button>
             }
           />
-          <Link href="/tasks" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          <Link href="/tasks" className="relative flex items-center gap-1 text-sm font-medium text-primary hit-area hover:underline">
             ทั้งหมด <ArrowRight className="size-4" />
           </Link>
         </div>

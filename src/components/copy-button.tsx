@@ -9,7 +9,7 @@ export function CopyButton({ value }: { value: string }) {
     <button
       type="button"
       aria-label="คัดลอก"
-      className="rounded p-1 hover:bg-accent hover:text-foreground"
+      className="relative rounded p-1 hit-area hover:bg-accent hover:text-foreground"
       onClick={async () => {
         await navigator.clipboard.writeText(value);
         setDone(true);

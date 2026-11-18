@@ -45,9 +45,9 @@ function SheetContent({
         )}
         {...props}
       >
-        {side === "bottom" && <span aria-hidden className="absolute top-2 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-muted-foreground/30" />}
+        {side === "bottom" && <span aria-hidden className="absolute top-2 left-1/2 h-1.5 w-10 -translate-x-1/2 rounded-full bg-muted-foreground/30 sm:hidden" />}
         {children}
-        <SheetPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 text-muted-foreground hover:bg-accent">
+        <SheetPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 hit-area text-muted-foreground hover:bg-accent">
           <X className="size-4" />
           <span className="sr-only">ปิด</span>
         </SheetPrimitive.Close>

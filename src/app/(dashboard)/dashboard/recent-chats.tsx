@@ -36,7 +36,7 @@ export async function RecentChats() {
           <CardTitle>แชทล่าสุด</CardTitle>
           <CardDescription>ลูกค้าที่ทักเข้ามาทาง LINE OA</CardDescription>
         </div>
-        <Link href="/chats" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+        <Link href="/chats" className="relative flex items-center gap-1 text-sm font-medium text-primary hit-area hover:underline">
           ดูทั้งหมด <ArrowRight className="size-4" />
         </Link>
       </CardHeader>

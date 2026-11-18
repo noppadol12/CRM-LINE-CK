@@ -34,7 +34,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
       className={cn(
         // มือถือ: รายชื่อแชทเลื่อนไปกับหน้า · จอใหญ่: สูงพอดีจอ แบ่งคอลัมน์
         "-mx-4 -mt-4 grid border-b bg-card sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-xl sm:border sm:shadow-xs lg:h-[calc(100svh-8rem)]",
-        "lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px]",
+        "lg:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)_320px]",
       )}
     >
       <AutoRefresh intervalMs={5000} />
@@ -89,12 +89,12 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
             canManage={canManage(user)}
             info={<CustomerPanel tasks={tasks.map(toTaskDTO)} shipments={shipments.map(toShipmentDTO)} thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />}
           />
-          <aside className="hidden min-h-0 overflow-y-auto border-l bg-muted/20 xl:block">
+          <aside className="hidden min-h-0 overflow-y-auto border-l bg-muted/20 2xl:block">
             <CustomerPanel tasks={tasks.map(toTaskDTO)} shipments={shipments.map(toShipmentDTO)} thread={thread} tags={tags} deals={deals} owners={owners} currentUserId={user.id} canManage={canManage(user)} />
           </aside>
         </>
       ) : (
-        <div className="hidden flex-col items-center justify-center gap-3 text-center lg:flex xl:col-span-2">
+        <div className="hidden flex-col items-center justify-center gap-3 text-center lg:flex 2xl:col-span-2">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
             <MessagesSquare className="size-7" />
           </span>

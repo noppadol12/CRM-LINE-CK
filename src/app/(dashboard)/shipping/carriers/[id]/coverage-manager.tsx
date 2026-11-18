@@ -162,7 +162,7 @@ export function CoverageManager({ carrierId, coverage }: { carrierId: string; co
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {[r.branch, r.phone, r.transitDays, r.note].filter(Boolean).join(" · ") || (
-                    <button type="button" onClick={() => setEditing(r.province)} className="text-primary hover:underline">
+                    <button type="button" onClick={() => setEditing(r.province)} className="relative text-primary hit-area hover:underline">
                       + ระบุสาขาปลายทาง
                     </button>
                   )}

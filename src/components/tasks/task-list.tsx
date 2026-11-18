@@ -51,7 +51,7 @@ function Row({ t, now, showCustomer, onToggle }: { t: TaskItem; now: number; sho
         aria-label={done ? `ยกเลิกเสร็จ ${t.title}` : `ทำเสร็จ ${t.title}`}
         onClick={() => onToggle(!done)}
         className={cn(
-          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+          "relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors hit-area",
           done ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40 hover:border-primary",
         )}
       >

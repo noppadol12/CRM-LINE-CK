@@ -16,7 +16,7 @@ type Tag = { id: string; name: string; color: string; count: number };
 
 export function ColorPicker({ value, onChange }: { value: string; onChange: (c: TagColor) => void }) {
   return (
-    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="สีแท็ก">
+    <div className="flex flex-wrap gap-2.5 sm:gap-1.5" role="radiogroup" aria-label="สีแท็ก">
       {TAG_COLOR_KEYS.map((key) => (
         <button
           key={key}
@@ -27,7 +27,7 @@ export function ColorPicker({ value, onChange }: { value: string; onChange: (c: 
           title={TAG_COLORS[key].label}
           onClick={() => onChange(key)}
           className={cn(
-            "flex size-6 items-center justify-center rounded-full ring-offset-2 ring-offset-card transition",
+            "flex size-9 items-center justify-center rounded-full ring-offset-2 ring-offset-card transition sm:size-6",
             TAG_COLORS[key].dot,
             value === key ? "ring-2 ring-foreground/60" : "hover:scale-110",
           )}

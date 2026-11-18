@@ -268,12 +268,12 @@ export function ChatThread({
         {info && (
           <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="xl:hidden">
+              <Button variant="outline" size="sm" className="2xl:hidden">
                 <Info />
                 <span className="hidden sm:inline">ข้อมูลลูกค้า</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" aria-describedby={undefined} className="h-[88dvh] sm:inset-x-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:w-96 sm:rounded-none sm:border-l">
+            <SheetContent side="bottom" aria-describedby={undefined} className="ck-sheet-adaptive h-[88dvh] sm:inset-x-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:w-96 sm:rounded-none sm:border-l">
               <SheetTitle className="border-b px-5 py-3.5 text-base font-semibold">ข้อมูลลูกค้า</SheetTitle>
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{info}</div>
             </SheetContent>

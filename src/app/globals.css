@@ -325,3 +325,23 @@ html.theme-switching *::after {
   :root { --border: oklch(0.7 0.01 260); --input: oklch(0.6 0.01 260); --muted-foreground: oklch(0.4 0.02 260); }
   .dark { --border: oklch(0.5 0.014 260); --input: oklch(0.6 0.015 260); --muted-foreground: oklch(0.82 0.016 260); }
 }
+
+/*
+ * พื้นที่กดขยาย (จอสัมผัส): ปุ่ม/ลิงก์เล็ก ๆ ให้แตะโดนง่ายขึ้น ~44pt ตามแนว Apple
+ * ใช้คู่กับ relative/absolute — ขยายเฉพาะพื้นที่รับแตะ ไม่เปลี่ยนหน้าตา
+ */
+@utility hit-area {
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -10px;
+    }
+  }
+}
+
+/* แผ่นที่มือถือขึ้นจากล่าง แต่จอใหญ่เป็นแผงขวา — เข้า/ออกทางขวาให้ตรงตำแหน่ง */
+@media (min-width: 640px) {
+  .ck-sheet-adaptive[data-state="open"] { animation: ck-right-in 500ms var(--ease-sheet); animation-timing-function: var(--spring-sheet); }
+  .ck-sheet-adaptive[data-state="closed"] { animation: ck-right-out 220ms var(--ease-sheet) forwards; }
+}

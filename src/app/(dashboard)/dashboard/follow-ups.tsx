@@ -21,7 +21,7 @@ export async function FollowUps() {
           <CardTitle>ต้องติดตามวันนี้</CardTitle>
           <CardDescription>ดีลที่ถึงหรือเลยวันนัด</CardDescription>
         </div>
-        <Link href="/deals" className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+        <Link href="/deals" className="relative flex items-center gap-1 text-sm font-medium text-primary hit-area hover:underline">
           ดีลทั้งหมด <ArrowRight className="size-4" />
         </Link>
       </CardHeader>
