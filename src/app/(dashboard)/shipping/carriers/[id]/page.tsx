@@ -11,7 +11,7 @@ import { CarrierFormDialog } from "@/components/shipping/carrier-form-dialog";
 import { getCurrentUser } from "@/lib/auth";
 import { displayName, formatPhone } from "@/lib/format";
 import { canManage } from "@/lib/permissions";
-import { CARRIER_KINDS, PAYMENT_LABEL } from "@/lib/provinces";
+import { CARRIER_KINDS, PAYMENT_LABEL, provinceOrder } from "@/lib/provinces";
 import { getCarrier, toShipmentDTO } from "@/lib/shipping";
 import { thNumber } from "@/lib/utils";
 import { ShipmentsTable } from "../../shipments-table";
@@ -37,7 +37,7 @@ async function CarrierDetail({ params }: { params: PageProps<"/shipping/carriers
   const customers = [
     ...c.primaryCustomers.map((x) => ({ ...x, role: "หลัก" })),
     ...c.backupCustomers.map((x) => ({ ...x, role: "สำรอง" })),
-  ].sort((a, b) => (a.province ?? "ฮ").localeCompare(b.province ?? "ฮ", "th"));
+  ].sort((a, b) => provinceOrder(a.province) - provinceOrder(b.province));
 
   const info = [
     c.phone && { icon: Phone, text: c.phone, href: `tel:${c.phone.replace(/[^\d+]/g, "")}` },

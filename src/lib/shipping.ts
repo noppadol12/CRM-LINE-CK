@@ -1,5 +1,5 @@
 import "server-only";
-import { PROVINCES } from "@/lib/provinces";
+import { PROVINCES, provinceOrder } from "@/lib/provinces";
 import { prisma } from "@/lib/prisma";
 
 const th = (a: string, b: string) => a.localeCompare(b, "th");
@@ -55,7 +55,7 @@ export async function getCarrier(id: string) {
     },
   });
   if (!carrier) return null;
-  carrier.coverage.sort((a, b) => th(a.province, b.province));
+  carrier.coverage.sort((a, b) => provinceOrder(a.province) - provinceOrder(b.province));
   return carrier;
 }
 
