@@ -51,6 +51,7 @@ export const PAYMENT_LABEL: Record<string, string> = { origin: "เก็บต�
 export const BUILTIN_CARRIERS = [
   { id: "flash-express", name: "Flash Express (แฟลช)", kind: "parcel", trackingUrl: "https://www.flashexpress.co.th/fle/tracking" },
   { id: "thailand-post-ems", name: "EMS ไปรษณีย์ไทย", kind: "post", trackingUrl: "https://track.thailandpost.co.th/" },
+  { id: "kex-express", name: "KEX Express (เคอรี่)", kind: "parcel", trackingUrl: "https://th.kex-express.com/" },
 ];
 
 /** ลิงก์ติดตามพัสดุจาก template เช่น https://track.example.com/?no={เลขพัสดุ} */

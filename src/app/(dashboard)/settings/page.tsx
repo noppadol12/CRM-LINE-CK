@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { DriveResultToast } from "./drive-actions";
 import { DriveStorage } from "./drive-storage";
 import { DatabaseUsage } from "./database-usage";
+import { SenderSettings } from "./sender-settings";
+import { getSender } from "@/lib/sender";
 import { TeamManager } from "./team-manager";
 import { StagesManager } from "./stages-manager";
 import { listStages } from "@/lib/stages";
@@ -42,6 +44,9 @@ export default function SettingsPage() {
           </Suspense>
           <Suspense fallback={<Skeleton className="h-80 rounded-xl" />}>
             <StagesSection />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-64 rounded-xl" />}>
+            <SenderSection />
           </Suspense>
           <Suspense fallback={<Skeleton className="h-96 rounded-xl" />}>
             <QuickRepliesSection />
@@ -102,6 +107,21 @@ async function TagsSection() {
           tags={tags.map((t) => ({ id: t.id, name: t.name, color: t.color, count: t._count.customers }))}
           canEdit={canManage(user)}
         />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function SenderSection() {
+  const [user, sender] = await Promise.all([getCurrentUser(), getSender()]);
+  return (
+    <Card id="sender" className="scroll-mt-24">
+      <CardHeader>
+        <CardTitle>ข้อมูลผู้ส่ง (ใบปะหน้า)</CardTitle>
+        <CardDescription>ชื่อ เบอร์ และที่อยู่ที่พิมพ์เป็นผู้ส่งบนใบปะหน้าพัสดุทุกใบ</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SenderSettings key={`${sender.name}|${sender.phone}|${sender.address}`} sender={sender} canEdit={canManage(user)} />
       </CardContent>
     </Card>
   );

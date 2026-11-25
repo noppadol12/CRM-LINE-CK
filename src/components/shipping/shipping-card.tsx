@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, PackageCheck, Pencil, Plus, Truck } from "lucide-react";
+import { Loader2, MapPin, PackageCheck, Pencil, Plus, Printer, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { getShipmentFormData, updateCustomerShipping } from "@/actions/shipping";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { trackingLink } from "@/lib/provinces";
 import { cn } from "@/lib/utils";
 import { CarrierSelect, Field, ProvinceSelect } from "./fields";
 import { ShipmentDialog } from "./shipment-dialog";
+import { LabelDialog } from "@/components/labels/label-dialog";
 
 export type CustomerShippingInfo = {
   id: string;
@@ -101,19 +102,28 @@ function InfoDialog({ customer, open, onOpenChange }: { customer: CustomerShippi
 /** สรุปการจัดส่งของลูกค้า — ใช้ในหน้าลูกค้าและข้างห้องแชท */
 export function ShippingCard({ customer, shipments, compact }: { customer: CustomerShippingInfo; shipments: ShipmentSummary[]; compact?: boolean }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [labelFor, setLabelFor] = useState<string | null>(null);
   const empty = !customer.province && !customer.carrier && !customer.shippingNote;
   const last = shipments[0];
 
   return (
     <div className={cn("space-y-2", !compact && "rounded-xl border bg-card p-5")}>
-      <div className="flex items-center justify-between">
-        <p className={cn("flex items-center gap-1.5 font-medium", compact ? "text-xs text-muted-foreground" : "text-sm")}>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+        <p className={cn("flex items-center gap-1.5 font-medium whitespace-nowrap", compact ? "text-xs text-muted-foreground" : "text-sm")}>
           <Truck className="size-3.5" /> การจัดส่ง
         </p>
-        <div className="flex gap-1">
+        <div className="ml-auto flex flex-wrap justify-end gap-1">
           <Button variant="ghost" size="icon-sm" aria-label="แก้ไขข้อมูลจัดส่ง" onClick={() => setEditOpen(true)}>
             <Pencil />
           </Button>
+          <LabelDialog
+            customerId={customer.id}
+            trigger={
+              <Button variant="outline" size="sm" className="h-7 px-2 text-xs" aria-label="พิมพ์ใบปะหน้า">
+                <Printer /> ใบปะหน้า
+              </Button>
+            }
+          />
           <ShipmentDialog
             customerId={customer.id}
             trigger={
@@ -169,6 +179,15 @@ export function ShippingCard({ customer, shipments, compact }: { customer: Custo
                   ) : (
                     <span className="ml-auto shrink-0 font-mono">{s.trackingNo}</span>
                   ))}
+                <button
+                  type="button"
+                  onClick={() => setLabelFor(s.id)}
+                  aria-label="พิมพ์ใบปะหน้ารายการนี้"
+                  title="พิมพ์ใบปะหน้า"
+                  className={cn("relative shrink-0 rounded p-0.5 text-muted-foreground hit-area hover:bg-accent hover:text-foreground", !s.trackingNo && "ml-auto")}
+                >
+                  <Printer className="size-3.5" />
+                </button>
               </li>
             );
           })}
@@ -177,6 +196,7 @@ export function ShippingCard({ customer, shipments, compact }: { customer: Custo
       {!compact && last == null && <p className="text-xs text-muted-foreground">ยังไม่มีประวัติการส่งของ</p>}
 
       {editOpen && <InfoDialog customer={customer} open={editOpen} onOpenChange={setEditOpen} />}
+      {labelFor && <LabelDialog customerId={customer.id} shipmentId={labelFor} open onOpenChange={(o) => !o && setLabelFor(null)} />}
     </div>
   );
 }

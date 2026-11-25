@@ -3,11 +3,12 @@
 import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MoreHorizontal, PackageCheck, Pencil, Search, Send, Trash2 } from "lucide-react";
+import { MoreHorizontal, PackageCheck, Pencil, Printer, Search, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { deleteShipment } from "@/actions/shipping";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ShipmentDialog } from "@/components/shipping/shipment-dialog";
+import { LabelDialog } from "@/components/labels/label-dialog";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { baht } from "@/lib/deal-stages";
@@ -38,6 +39,20 @@ export function ShipmentsTable({
   const [q, setQ] = useState(initialQ);
   const [edit, setEdit] = useState<ShipmentDTO | null>(null);
   const [del, setDel] = useState<ShipmentDTO | null>(null);
+  const [label, setLabel] = useState<ShipmentDTO | null>(null);
+  // เลือกหลายรายการ → พิมพ์ใบปะหน้ารวดเดียว
+  const [picked, setPicked] = useState<string[]>([]);
+  const visibleIds = rows.map((r) => r.id);
+  const pickedVisible = picked.filter((id) => visibleIds.includes(id));
+  const allPicked = rows.length > 0 && pickedVisible.length === rows.length;
+  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  const printPicked = () => {
+    let layout = "4";
+    try {
+      layout = localStorage.getItem("ck-label-layout") === "2" ? "2" : "4";
+    } catch {}
+    window.open(`/print/labels?layout=${layout}&s=${pickedVisible.join(",")}`, "_blank");
+  };
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params.toString());
@@ -83,6 +98,18 @@ export function ShipmentsTable({
         </div>
       )}
 
+      {pickedVisible.length > 0 && (
+        <div className="sticky top-16 z-20 flex items-center gap-2 rounded-xl border border-primary/40 bg-primary-soft px-3 py-2 text-sm">
+          <span className="font-medium text-primary-soft-foreground">เลือก {pickedVisible.length} รายการ</span>
+          <Button size="sm" className="ml-auto" onClick={printPicked}>
+            <Printer /> พิมพ์ใบปะหน้า
+          </Button>
+          <Button size="icon-sm" variant="ghost" aria-label="ยกเลิกการเลือก" onClick={() => setPicked([])}>
+            <X />
+          </Button>
+        </div>
+      )}
+
       {/* มือถือ: การ์ดแทนตาราง */}
       <ul className="divide-y rounded-xl border bg-card sm:hidden">
         {rows.length === 0 && <li className="px-4 py-10 text-center text-sm text-muted-foreground">ยังไม่มีการบันทึกการส่งของ</li>}
@@ -90,6 +117,13 @@ export function ShipmentsTable({
           const link = trackingLink(s.carrier?.trackingUrl, s.trackingNo);
           return (
             <li key={s.id} className="flex items-start gap-3 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={picked.includes(s.id)}
+                onChange={() => toggle(s.id)}
+                aria-label={`เลือก ${displayName(s.customer)}`}
+                className="mt-1 size-5 shrink-0 accent-primary"
+              />
               <div className="min-w-0 flex-1 space-y-0.5">
                 <p className="flex items-center gap-2 text-sm">
                   <Link href={`/customers/${s.customer.id}`} className="truncate font-medium">
@@ -124,6 +158,9 @@ export function ShipmentsTable({
                   <DropdownMenuItem onSelect={() => setEdit(s)}>
                     <Pencil /> แก้ไข / ส่งเลขพัสดุ
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setLabel(s)}>
+                    <Printer /> พิมพ์ใบปะหน้า
+                  </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onSelect={() => setDel(s)}>
                     <Trash2 /> ลบ
                   </DropdownMenuItem>
@@ -138,7 +175,16 @@ export function ShipmentsTable({
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th className="px-4 py-2.5 text-left font-medium">วันที่</th>
+              <th className="w-10 pl-4">
+                <input
+                  type="checkbox"
+                  checked={allPicked}
+                  onChange={() => setPicked(allPicked ? [] : visibleIds)}
+                  aria-label="เลือกทั้งหมด"
+                  className="size-4 accent-primary align-middle"
+                />
+              </th>
+              <th className="px-3 py-2.5 text-left font-medium">วันที่</th>
               <th className="px-3 py-2.5 text-left font-medium">ลูกค้า</th>
               <th className="px-3 py-2.5 text-left font-medium">ขนส่ง</th>
               <th className="px-3 py-2.5 text-left font-medium">เลขพัสดุ</th>
@@ -150,7 +196,7 @@ export function ShipmentsTable({
           <tbody className="divide-y">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   <PackageCheck className="mx-auto mb-2 size-8 text-muted-foreground/50" />
                   ยังไม่มีการบันทึกการส่งของ — บันทึกได้จากหน้าลูกค้า ข้างห้องแชท หรือเมนูของการ์ดดีล
                 </td>
@@ -159,8 +205,17 @@ export function ShipmentsTable({
             {rows.map((s) => {
               const link = trackingLink(s.carrier?.trackingUrl, s.trackingNo);
               return (
-                <tr key={s.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-2.5 whitespace-nowrap">{dateFmt.format(s.shippedAt)}</td>
+                <tr key={s.id} className={picked.includes(s.id) ? "bg-primary-soft/40" : "hover:bg-muted/30"}>
+                  <td className="pl-4">
+                    <input
+                      type="checkbox"
+                      checked={picked.includes(s.id)}
+                      onChange={() => toggle(s.id)}
+                      aria-label={`เลือก ${displayName(s.customer)}`}
+                      className="size-4 accent-primary align-middle"
+                    />
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{dateFmt.format(s.shippedAt)}</td>
                   <td className="max-w-48 px-3 py-2.5">
                     <Link href={`/customers/${s.customer.id}`} className="block truncate font-medium hover:underline">
                       {displayName(s.customer)}
@@ -209,6 +264,9 @@ export function ShipmentsTable({
                         <DropdownMenuItem onSelect={() => setEdit(s)}>
                           <Pencil /> แก้ไข / ส่งเลขพัสดุ
                         </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setLabel(s)}>
+                          <Printer /> พิมพ์ใบปะหน้า
+                        </DropdownMenuItem>
                         <DropdownMenuItem variant="destructive" onSelect={() => setDel(s)}>
                           <Trash2 /> ลบ
                         </DropdownMenuItem>
@@ -230,6 +288,7 @@ export function ShipmentsTable({
           onOpenChange={(o) => !o && setEdit(null)}
         />
       )}
+      {label && <LabelDialog customerId={label.customer.id} shipmentId={label.id} open onOpenChange={(o) => !o && setLabel(null)} />}
       <ConfirmDialog
         open={Boolean(del)}
         onOpenChange={(o) => !o && setDel(null)}
