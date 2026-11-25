@@ -33,6 +33,7 @@ const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" });
 const dayLabelFmt = new Intl.DateTimeFormat("th-TH", { timeZone: "Asia/Bangkok", weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
 const MAX_UPLOAD = 4 * 1024 * 1024;
+const MAX_FILES = 10;
 const ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv";
 
 /** ย่อรูปก่อนส่ง: ด้านยาวไม่เกิน 1600px เป็น JPEG ไม่เกิน ~1 MB (LINE กำหนดรูปตัวอย่างไม่เกิน 1 MB) */
@@ -71,7 +72,7 @@ function FreeReplyHint({ until }: { until: number | null }) {
   if (left <= 0)
     return (
       <>
-        <span className="hidden sm:inline">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · วางรูปได้ด้วย Ctrl+V · </span>
+        <span className="hidden sm:inline">Enter ส่ง · Shift+Enter ขึ้นบรรทัดใหม่ · วางรูปด้วย Ctrl+V หรือลากไฟล์มาวาง (ได้หลายไฟล์) · </span>
         ข้อความนับโควตาของ OA
       </>
     );
@@ -154,6 +155,17 @@ export function ChatThread({
     if (el && nearBottom.current) el.scrollTop = el.scrollHeight;
   }, [lastId]);
 
+  // รูปโหลดเสร็จทีหลัง (ความสูงเพิ่ม) → เลื่อนลงล่างสุดต่อ ถ้าผู้ใช้อยู่ล่างสุดอยู่แล้ว
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onLoad = (e: Event) => {
+      if (e.target instanceof HTMLImageElement && nearBottom.current) el.scrollTop = el.scrollHeight;
+    };
+    el.addEventListener("load", onLoad, true);
+    return () => el.removeEventListener("load", onLoad, true);
+  }, []);
+
   /** แทรกข้อความสำเร็จรูปตรงตำแหน่งเคอร์เซอร์ */
   function insertText(snippet: string) {
     const el = textRef.current;
@@ -195,48 +207,75 @@ export function ChatThread({
     });
   }
 
-  function sendFile(original: File) {
-    if (!canSend) return;
+  /** ส่งรูป/ไฟล์ได้ทีละหลายรายการ — เรียงส่งตามลำดับที่เลือก */
+  function sendFiles(originals: File[]) {
+    if (!canSend || originals.length === 0) return;
+    const list = originals.slice(0, MAX_FILES);
+    if (originals.length > MAX_FILES) toast.info(`ส่งได้ครั้งละไม่เกิน ${MAX_FILES} รายการ — ส่ง ${MAX_FILES} รายการแรก`);
     nearBottom.current = true;
     start(async () => {
-      let file = original;
-      try {
-        if (original.type.startsWith("image/")) file = await prepareImage(original);
-      } catch {
-        toast.error("เปิดรูปนี้ไม่ได้ (รองรับ JPG / PNG / WebP)");
-        return;
+      // 1) เตรียมไฟล์ (ย่อรูป) + โชว์ฟองข้อความรอส่งทุกรายการทันที
+      const ready: File[] = [];
+      for (const [i, original] of list.entries()) {
+        let file = original;
+        try {
+          if (original.type.startsWith("image/")) file = await prepareImage(original);
+        } catch {
+          toast.error(`เปิดรูป ${original.name} ไม่ได้ (รองรับ JPG / PNG / WebP)`);
+          continue;
+        }
+        if (file.size > MAX_UPLOAD) {
+          toast.error(`${original.name} ใหญ่เกิน 4 MB`);
+          continue;
+        }
+        const isImage = file.type === "image/jpeg" || file.type === "image/png";
+        addOptimistic({
+          id: `tmp-${Date.now()}-${i}`,
+          direction: "OUTBOUND",
+          type: isImage ? "IMAGE" : "FILE",
+          text: isImage ? null : file.name,
+          payload: null,
+          lineMessageId: null,
+          sentAt: new Date(),
+          senderName: null,
+          pending: true,
+          localUrl: isImage ? URL.createObjectURL(file) : undefined,
+        });
+        ready.push(file);
       }
-      if (file.size > MAX_UPLOAD) {
-        toast.error("ไฟล์ใหญ่เกิน 4 MB");
-        return;
+      // 2) ส่งทีละไฟล์ตามลำดับ (ลูกค้าเห็นเรียงเหมือนที่เลือก)
+      let ok = 0;
+      let free = false;
+      for (const file of ready) {
+        const fd = new FormData();
+        fd.set("customerId", customer.id);
+        fd.set("file", file);
+        const r = await sendChatAttachment(fd);
+        if (r.ok) {
+          ok++;
+          if (r.message?.includes("ฟรี")) free = true;
+        } else {
+          toast.error(`${file.name}: ${r.error}`, { duration: 10000 });
+          if (r.error.includes("Google Drive") || r.error.includes("บล็อก")) break; // ปัญหาที่ส่งไฟล์ถัดไปก็ไม่ผ่าน
+        }
       }
-      const isImage = file.type === "image/jpeg" || file.type === "image/png";
-      const localUrl = isImage ? URL.createObjectURL(file) : undefined;
-      addOptimistic({
-        id: `tmp-${Date.now()}`,
-        direction: "OUTBOUND",
-        type: isImage ? "IMAGE" : "FILE",
-        text: isImage ? null : file.name,
-        payload: null,
-        lineMessageId: null,
-        sentAt: new Date(),
-        senderName: null,
-        pending: true,
-        localUrl,
-      });
-      const fd = new FormData();
-      fd.set("customerId", customer.id);
-      fd.set("file", file);
-      const r = await sendChatAttachment(fd);
-      if (r.ok) {
-        if (r.message?.includes("ฟรี")) toast.success(r.message);
-      } else toast.error(r.error, { duration: 10000 });
+      if (ready.length > 1 && ok > 0) toast.success(`ส่งแล้ว ${ok}/${ready.length} รายการ${free ? " (ฟรีรายการแรก)" : ""}`);
+      else if (free) toast.success("ส่งแล้ว (ฟรี ไม่นับโควตา)");
     });
   }
 
   return (
     // มือถือ: ห้องแชทเต็มจอ (ทับแถบบน/ล่าง) เหมือนแอป LINE · จอใหญ่: คอลัมน์กลาง
-    <section className="fixed inset-0 z-50 flex h-dvh min-h-0 min-w-0 flex-col bg-card pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] lg:static lg:z-auto lg:h-auto lg:px-0">
+    <section
+      onDragOver={(e) => {
+        if (canSend && e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!canSend || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        sendFiles(Array.from(e.dataTransfer.files));
+      }}
+      className="fixed inset-0 z-50 flex h-dvh min-h-0 min-w-0 flex-col bg-card pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] lg:static lg:z-auto lg:h-auto lg:px-0">
       {/* ===== หัวห้อง ===== */}
       <header className="flex items-center gap-2 border-b px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:gap-3 sm:px-4 sm:pb-2.5 lg:pt-2.5">
         <Button variant="ghost" size="icon" asChild className="lg:hidden">
@@ -335,11 +374,12 @@ export function ChatThread({
               ref={fileRef}
               type="file"
               accept={ACCEPT}
+              multiple
               hidden
               onChange={(e) => {
-                const f = e.target.files?.[0];
+                const files = Array.from(e.target.files ?? []);
                 e.target.value = "";
-                if (f) sendFile(f);
+                sendFiles(files);
               }}
             />
             <Button
@@ -350,7 +390,7 @@ export function ChatThread({
               onClick={() => fileRef.current?.click()}
               disabled={sending}
               aria-label="แนบรูปหรือไฟล์"
-              title="แนบรูปหรือไฟล์ (ไม่เกิน 4 MB)"
+              title="แนบรูปหรือไฟล์ — เลือกได้หลายรายการ (สูงสุด 10, ไฟล์ละไม่เกิน 4 MB)"
             >
               <Paperclip />
             </Button>
@@ -365,10 +405,10 @@ export function ChatThread({
               value={text}
               onChange={(e) => setText(e.target.value)}
               onPaste={(e) => {
-                const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/"));
-                if (f) {
+                const imgs = Array.from(e.clipboardData.files).filter((x) => x.type.startsWith("image/"));
+                if (imgs.length) {
                   e.preventDefault();
-                  sendFile(f);
+                  sendFiles(imgs);
                 }
               }}
               onKeyDown={(e) => {
