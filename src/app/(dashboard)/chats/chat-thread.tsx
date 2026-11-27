@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { displayName } from "@/lib/format";
 import { cn, initials } from "@/lib/utils";
 import { PaymentTermBadge } from "@/components/customers/payment-term";
+import { FavoriteButton } from "@/components/favorite-button";
 import { MessageBubble, type BubbleMessage } from "./message-bubble";
 import { QuickReplyPicker, type QuickReply } from "./quick-reply-picker";
 
@@ -27,6 +28,7 @@ type ThreadCustomer = {
   unreadCount: number;
   paymentTerm: string | null;
   creditDays: number | null;
+  favorite: boolean;
 };
 
 const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" });
@@ -304,6 +306,7 @@ export function ChatThread({
                   : "ลูกค้า LINE"}
           </p>
         </div>
+        <FavoriteButton customerId={customer.id} favorite={customer.favorite} />
         {info && (
           <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
             <SheetTrigger asChild>

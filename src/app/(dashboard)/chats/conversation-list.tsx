@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Ban, ChevronDown, Loader2, Search, Tag, Users, X } from "lucide-react";
+import { Ban, ChevronDown, Loader2, Search, Star, Tag, Users, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Conversation } from "@/lib/chats";
 import { displayName, timeAgo } from "@/lib/format";
@@ -27,7 +27,7 @@ export function ConversationList({
   const params = useSearchParams();
   const [pending, start] = useTransition();
   const [q, setQ] = useState(params.get("q") ?? "");
-  const filter = params.get("f") === "unread" ? "unread" : "all";
+  const filter = params.get("f") === "unread" ? "unread" : params.get("f") === "fav" ? "fav" : "all";
   const picked = (params.get("t") ?? "").split(",").filter(Boolean);
   const pickedTags = tags.filter((t) => picked.includes(t.id));
   /** ตั้งแท็กที่กรอง (หลายแท็ก = ห้องที่มีแท็กใดแท็กหนึ่ง) */
@@ -67,8 +67,8 @@ export function ConversationList({
             className="h-9 w-full rounded-md border border-input bg-card pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
           />
         </label>
-        <div className="grid grid-cols-2 rounded-md bg-muted p-0.5 text-sm" role="tablist">
-          {(["all", "unread"] as const).map((f) => (
+        <div className="grid grid-cols-3 rounded-md bg-muted p-0.5 text-sm" role="tablist">
+          {(["all", "unread", "fav"] as const).map((f) => (
             <Link
               key={f}
               role="tab"
@@ -81,7 +81,15 @@ export function ConversationList({
                 filter === f ? "bg-card font-medium shadow-xs" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {f === "all" ? "ทั้งหมด" : "รอตอบ"}
+              {f === "all" ? (
+                "ทั้งหมด"
+              ) : f === "unread" ? (
+                "รอตอบ"
+              ) : (
+                <span className="inline-flex items-center justify-center gap-1">
+                  <Star className="size-3.5" fill={filter === "fav" ? "currentColor" : "none"} /> โปรด
+                </span>
+              )}
             </Link>
           ))}
         </div>
@@ -139,7 +147,7 @@ export function ConversationList({
       <ul className="min-h-0 flex-1 overflow-y-auto p-1.5">
         {conversations.length === 0 && (
           <li className="px-4 py-12 text-center text-sm text-muted-foreground">
-            {picked.length ? "ไม่มีห้องแชทที่ติดแท็กนี้" : filter === "unread" ? "ตอบครบทุกห้องแล้ว 🎉" : q ? "ไม่พบห้องแชท" : "ยังไม่มีแชท"}
+            {picked.length ? "ไม่มีห้องแชทที่ติดแท็กนี้" : filter === "fav" ? "ยังไม่มีแชทโปรด — กดดาว ☆ ที่หัวห้องแชทเพื่อเพิ่ม" : filter === "unread" ? "ตอบครบทุกห้องแล้ว 🎉" : q ? "ไม่พบห้องแชท" : "ยังไม่มีแชท"}
           </li>
         )}
         {conversations.map((c) => {
@@ -176,6 +184,7 @@ export function ConversationList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className={cn("truncate text-sm", c.unreadCount > 0 ? "font-semibold" : "font-medium")}>{name}</span>
+                    {c.favoritedBy.length > 0 && <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-500" aria-label="แชทโปรด" />}
                     <PaymentTermBadge term={c.paymentTerm} days={c.creditDays} short />
                     <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
                       {c.lastMessageAt && timeAgo(c.lastMessageAt).replace("ที่ผ่านมา", "")}

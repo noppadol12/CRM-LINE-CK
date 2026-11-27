@@ -14,6 +14,7 @@ const STATUSES = [
   { value: "following", label: "เพื่อน LINE" },
   { value: "unfollowed", label: "บล็อก" },
   { value: "manual", label: "เพิ่มเอง" },
+  { value: "fav", label: "★ โปรด" },
 ];
 
 export function CustomerFilters({ tags, canSeeTrash }: { tags: TagOption[]; canSeeTrash: boolean }) {

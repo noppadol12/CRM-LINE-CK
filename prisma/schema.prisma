@@ -43,6 +43,7 @@ model AdminUser {
   dealEvents        DealEvent[]
   pushSubscriptions PushSubscription[]
   shipments         Shipment[]
+  favorites         FavoriteCustomer[]
   tasksAssigned     Task[]             @relation("TaskAssignee")
   tasksCreated      Task[]             @relation("TaskCreator")
   resetTokens       PasswordResetToken[]
@@ -126,6 +127,7 @@ model Customer {
   deals     Deal[]
   shipments Shipment[]
   tasks     Task[]
+  favoritedBy FavoriteCustomer[]
 
   @@index([phone])
   @@index([province])
@@ -472,4 +474,17 @@ model Task {
   @@index([doneAt, dueAt])
   @@index([customerId])
   @@map("tasks")
+}
+
+/// แชท/ลูกค้าโปรด — แยกของแต่ละคนในทีม
+model FavoriteCustomer {
+  userId     String
+  user       AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+
+  @@id([userId, customerId])
+  @@index([customerId])
+  @@map("favorite_customers")
 }

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { REPLY_WINDOW_MS } from "@/lib/line-send";
 import { customerShipments, toShipmentDTO } from "@/lib/shipping";
 import { listTasks, toTaskDTO } from "@/lib/tasks";
+import { prisma } from "@/lib/prisma";
 import { AutoRefresh } from "./auto-refresh";
 import { ChatThread } from "./chat-thread";
 import { ConversationList } from "./conversation-list";
@@ -18,7 +19,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
   const user = await getCurrentUser();
   const params = parseInboxParams(await searchParams);
   const [conversations, thread, tags, deals, owners, quickReplies, shipments, tasks] = await Promise.all([
-    listConversations(params),
+    listConversations({ ...params, userId: user.id }),
     params.selectedId ? getThread(params.selectedId, params.limit) : null,
     listTags(),
     params.selectedId ? listCustomerDeals(params.selectedId) : [],
@@ -27,6 +28,9 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
     params.selectedId ? customerShipments(params.selectedId, 3) : [],
     params.selectedId ? listTasks({ customerId: params.selectedId, take: 5 }).then((r) => r.open) : [],
   ]);
+  const isFavorite = params.selectedId
+    ? Boolean(await prisma.favoriteCustomer.findUnique({ where: { userId_customerId: { userId: user.id, customerId: params.selectedId } }, select: { userId: true } }))
+    : false;
   const selected = Boolean(thread);
 
   return (
@@ -63,6 +67,7 @@ export async function Inbox({ searchParams }: { searchParams: PageProps<"/chats"
               pictureUrl: thread.customer.pictureUrl,
               followStatus: thread.customer.followStatus,
               unreadCount: thread.customer.unreadCount,
+              favorite: isFavorite,
               paymentTerm: thread.customer.paymentTerm,
               creditDays: thread.customer.creditDays,
             }}

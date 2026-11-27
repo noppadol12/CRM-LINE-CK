@@ -10,7 +10,7 @@ import { Pagination } from "./pagination";
 
 export async function CustomersSection({ searchParams }: { searchParams: PageProps<"/customers">["searchParams"] }) {
   const user = await getCurrentUser();
-  const filters = parseFilters(await searchParams);
+  const filters = { ...parseFilters(await searchParams), userId: user.id };
   const [{ rows, total, page, pageCount }, tags] = await Promise.all([listCustomers(filters), listTags()]);
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);

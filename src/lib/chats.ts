@@ -2,7 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export type InboxFilter = "all" | "unread";
+export type InboxFilter = "all" | "unread" | "fav";
 
 export function parseInboxParams(sp: Record<string, string | string[] | undefined>) {
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]?.[0] : sp[k]) as string | undefined;
@@ -10,7 +10,7 @@ export function parseInboxParams(sp: Record<string, string | string[] | undefine
   return {
     selectedId: one("c") || null,
     q: one("q")?.trim().slice(0, 100) || undefined,
-    filter: (one("f") === "unread" ? "unread" : "all") as InboxFilter,
+    filter: (one("f") === "unread" ? "unread" : one("f") === "fav" ? "fav" : "all") as InboxFilter,
     // แท็กที่เลือก (คั่นด้วย , — ห้องที่มีแท็กใดแท็กหนึ่ง)
     tagIds: (one("t") ?? "")
       .split(",")
@@ -21,9 +21,10 @@ export function parseInboxParams(sp: Record<string, string | string[] | undefine
   };
 }
 
-export async function listConversations({ q, filter, tagIds = [] }: { q?: string; filter: InboxFilter; tagIds?: string[] }) {
+export async function listConversations({ q, filter, tagIds = [], userId }: { q?: string; filter: InboxFilter; tagIds?: string[]; userId: string }) {
   const and: Prisma.CustomerWhereInput[] = [{ deletedAt: null }, { lastMessageAt: { not: null } }];
   if (filter === "unread") and.push({ unreadCount: { gt: 0 } });
+  if (filter === "fav") and.push({ favoritedBy: { some: { userId } } });
   if (tagIds.length) and.push({ tags: { some: { tagId: { in: tagIds } } } });
   if (q) {
     const or: Prisma.CustomerWhereInput[] = [
@@ -55,6 +56,7 @@ export async function listConversations({ q, filter, tagIds = [] }: { q?: string
       paymentTerm: true,
       creditDays: true,
       tags: { select: { tag: { select: { name: true, color: true } } }, take: 2, orderBy: { assignedAt: "asc" } },
+      favoritedBy: { where: { userId }, select: { userId: true }, take: 1 },
     },
   });
 }

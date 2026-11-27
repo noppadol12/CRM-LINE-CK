@@ -17,6 +17,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { FavoriteButton } from "@/components/favorite-button";
 import { getCustomer, listTags } from "@/lib/customers";
 import { listCustomerDeals, listOwners } from "@/lib/deals";
 import { baht, isClosedStage } from "@/lib/deal-stages";
@@ -51,7 +53,11 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
     listOwners(),
     customerShipments(id, 8),
   ]);
-  const [timeline, tasks] = await Promise.all([customerTimeline(id), listTasks({ customerId: id })]);
+  const [timeline, tasks, fav] = await Promise.all([
+    customerTimeline(id),
+    listTasks({ customerId: id }),
+    prisma.favoriteCustomer.findUnique({ where: { userId_customerId: { userId: user.id, customerId: id } }, select: { userId: true } }),
+  ]);
   if (!c) notFound();
 
   const name = displayName(c);
@@ -74,7 +80,10 @@ export async function CustomerDetailView({ params }: { params: PageProps<"/custo
             <AvatarFallback className="text-lg">{initials(name)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1 space-y-1.5">
-            <h1 className="truncate text-2xl font-semibold tracking-tight">{name}</h1>
+            <div className="flex min-w-0 items-center gap-1">
+              <h1 className="truncate text-2xl font-semibold tracking-tight">{name}</h1>
+              {!c.deletedAt && <FavoriteButton customerId={c.id} favorite={Boolean(fav)} />}
+            </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               {c.fullName && c.lineName && (
                 <span className="inline-flex items-center gap-1">

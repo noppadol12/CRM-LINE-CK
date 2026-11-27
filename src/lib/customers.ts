@@ -8,7 +8,9 @@ export const PAGE_SIZE = 20;
 export type CustomerFilters = {
   q?: string;
   tag?: string;
-  status?: "following" | "unfollowed" | "manual";
+  status?: "following" | "unfollowed" | "manual" | "fav";
+  /** ผู้ใช้ที่ดูอยู่ (รายการโปรดเป็นของแต่ละคน) */
+  userId?: string;
   /** เงื่อนไขชำระเงิน หรือ "none" = ยังไม่ระบุ */
   pay?: PaymentTerm | "none";
   trash?: boolean;
@@ -23,7 +25,7 @@ export function parseFilters(sp: Record<string, string | string[] | undefined>):
   return {
     q: one("q")?.trim().slice(0, 100) || undefined,
     tag: one("tag") || undefined,
-    status: status === "following" || status === "unfollowed" || status === "manual" ? status : undefined,
+    status: status === "following" || status === "unfollowed" || status === "manual" || status === "fav" ? status : undefined,
     trash: one("view") === "trash",
     pay: one("pay") === "none" ? "none" : isPaymentTerm(one("pay")) ? (one("pay") as PaymentTerm) : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
@@ -49,6 +51,7 @@ function buildWhere(f: CustomerFilters): Prisma.CustomerWhereInput {
   if (f.status === "following") and.push({ followStatus: "FOLLOWING" });
   if (f.status === "unfollowed") and.push({ followStatus: "UNFOLLOWED" });
   if (f.status === "manual") and.push({ lineUserId: null });
+  if (f.status === "fav") and.push({ favoritedBy: { some: { userId: f.userId ?? "-" } } });
 
   return { AND: and };
 }
@@ -77,6 +80,7 @@ export async function listCustomers(f: CustomerFilters) {
         followStatus: true,
         paymentTerm: true,
         creditDays: true,
+        favoritedBy: { where: { userId: f.userId ?? "-" }, select: { userId: true }, take: 1 },
         _count: { select: { deals: { where: { stage: { notIn: ["WON", "LOST"] } } } } },
         lastMessageAt: true,
         unreadCount: true,
