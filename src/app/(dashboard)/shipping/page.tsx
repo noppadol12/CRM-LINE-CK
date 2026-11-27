@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Clock, MapPin, Phone, Plus, Truck } from "lucide-react";
+import { Clock, MapPin, Phone, Plus, Truck, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CarrierFormDialog } from "@/components/shipping/carrier-form-dialog";
+import { ManualLabelDialog } from "@/components/labels/manual-label-dialog";
 import { getCurrentUser } from "@/lib/auth";
 import { baht } from "@/lib/deal-stages";
 import { CARRIER_KINDS, PAYMENT_LABEL } from "@/lib/provinces";
@@ -43,14 +44,24 @@ async function Shipping({ searchParams }: { searchParams: PageProps<"/shipping">
           <h1 className="text-2xl font-semibold tracking-tight">ขนส่ง</h1>
           <p className="text-sm text-muted-foreground">ขนส่งเอกชนแยกตามจังหวัด ลูกค้าแต่ละรายใช้เจ้าไหน และประวัติการส่งของ</p>
         </div>
-        <CarrierFormDialog
-          trigger={
-            <Button>
-              <Plus />
-              เพิ่มบริษัทขนส่ง
-            </Button>
-          }
-        />
+        <div className="flex flex-wrap gap-2">
+          <ManualLabelDialog
+            trigger={
+              <Button variant="outline">
+                <Printer />
+                พิมพ์ใบปะหน้าแยก
+              </Button>
+            }
+          />
+          <CarrierFormDialog
+            trigger={
+              <Button>
+                <Plus />
+                เพิ่มบริษัทขนส่ง
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <nav className="inline-flex w-fit rounded-md border bg-muted/60 p-0.5" aria-label="มุมมอง">
